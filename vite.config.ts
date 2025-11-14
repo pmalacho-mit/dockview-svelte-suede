@@ -5,13 +5,9 @@ import { svelte } from "@sveltejs/vite-plugin-svelte";
 export default defineConfig({
   plugins: [svelte()],
   build: {
-    outDir: "bypass",
-    watch: {
-      include: ["./src/**", "./dist/**", "./public/**"],
-    },
+    outDir: "not-applicable",
   },
   server: {
-    watch: {},
     host: "0.0.0.0",
   },
 });
