@@ -112,7 +112,14 @@ export type ViewAPI<
 > = "api" extends keyof Parameters<
   Required<ViewProps<ViewType, Renderables, Additional>>["onReady"]
 >[0]
+<<<<<<< HEAD
   ? Parameters<
       Required<ViewProps<ViewType, Renderables, Additional>>["onReady"]
     >[0]["api"]
   : never;
+=======
+  ? /**/ Parameters<
+      Required<ViewProps<ViewType, Renderables, Additional>>["onReady"]
+    >[0]["api"]
+  : /**/ never;
+>>>>>>> refs/subrepo/dist/fetch
