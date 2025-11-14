@@ -79,11 +79,11 @@ export type ViewProps<
 > = ModifiedProps<
   ViewType,
   keyof ExtractComponentsFromRenderables<ViewType, Renderables> extends never
-    ? /**/ ComponentsConstraint<ViewType> & Record<never, never>
-    : /**/ ExtractComponentsFromRenderables<ViewType, Renderables>,
+    ? ComponentsConstraint<ViewType> & Record<never, never>
+    : ExtractComponentsFromRenderables<ViewType, Renderables>,
   keyof ExtractSnippetsFromRenderables<ViewType, Renderables> extends never
-    ? /**/ SnippetsConstraint<ViewType> & Record<never, never>
-    : /**/ ExtractSnippetsFromRenderables<ViewType, Renderables>,
+    ? SnippetsConstraint<ViewType> & Record<never, never>
+    : ExtractSnippetsFromRenderables<ViewType, Renderables>,
   Additional
 >;
 
@@ -112,7 +112,7 @@ export type ViewAPI<
 > = "api" extends keyof Parameters<
   Required<ViewProps<ViewType, Renderables, Additional>>["onReady"]
 >[0]
-  ? /**/ Parameters<
+  ? Parameters<
       Required<ViewProps<ViewType, Renderables, Additional>>["onReady"]
     >[0]["api"]
-  : /**/ never;
+  : never;
