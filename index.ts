@@ -28,7 +28,7 @@ import type {
   AddedPanelByView,
   Renderables,
 } from "./utils/index.js";
-import { signal } from "./utils/index.js";
+import { reactive } from "./utils/index.js";
 import themes, { type Theme, themeOptions } from "./utils/themes.js";
 import { Orientation } from "dockview-core";
 
@@ -38,7 +38,7 @@ export {
   SplitView,
   GridView,
   Orientation,
-  signal,
+  reactive,
   themes,
   themeOptions,
   DefaultDockTab,
@@ -116,3 +116,20 @@ export type ViewAPI<
       Required<ViewProps<ViewType, Renderables, Additional>>["onReady"]
     >[0]["api"]
   : never;
+
+export type ViewHelper<
+  Type extends ViewKey,
+  Views extends Renderables<Type>
+> = {
+  api: ViewAPI<Type, Views>;
+} & WithViewOnReady<Type, Views>;
+
+export type ViewsHelper<
+  T extends Record<string, { type: ViewKey } | Renderables<ViewKey>>
+> = {
+  [K in keyof T]: T[K]["type"] extends ViewKey
+    ? Omit<T[K], "type"> extends Renderables<T[K]["type"]>
+      ? ViewHelper<T[K]["type"], Omit<T[K], "type">>
+      : never
+    : never;
+};
