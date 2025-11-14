@@ -219,7 +219,7 @@ type SpreadAddSnippetPanelOptions<
       /**/
       | [];
 
-export const signal = <T>(getter: () => T): T =>
+export const reactive = <T>(getter: () => T): T =>
   new ReactivePanelUpdater(getter) as T;
 
 export type ExtendedGridAPI<
@@ -246,7 +246,7 @@ export type ExtendedGridAPI<
     ...params: SpreadAddSnippetPanelOptions<ViewType, K, Snippets, Additional>
   ) => Promise<{ panel: AddedPanelByView<ViewType>; reference: string }>;
 
-  signal: <T>(getter: () => T) => T;
+  reactive: <T>(getter: () => T) => T;
 };
 
 export type RawViewAPIs = {
@@ -443,14 +443,14 @@ export const createExtendedAPI = <
   };
 
   if ("onDidRemovePanel" in api)
-    api.onDidRemovePanel(ReactivePanelUpdater.DettachFromAll);
+    api.onDidRemovePanel(ReactivePanelUpdater.Detach);
   else if ("onDidRemoveView" in api)
-    api.onDidRemoveView(ReactivePanelUpdater.DettachFromAll);
+    api.onDidRemoveView(ReactivePanelUpdater.Detach);
 
   return {
     addComponentPanel,
     addSnippetPanel,
-    signal: signal,
+    reactive,
   } satisfies Target;
 };
 

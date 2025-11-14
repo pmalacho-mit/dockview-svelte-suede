@@ -4,28 +4,17 @@ import type { AddedPanelByView } from "./index.js";
 export default class ReactivePanelUpdater<T> {
   #value?: T;
   private subscribers = new Map<AddedPanelByView, (value: T) => void>();
+  private cleanup?: () => void;
 
   get value() {
     return this.#value;
   }
 
-  constructor(getter: () => T) {
-    this.#value = getter();
-    $effect(() => {
-      this.#value = getter();
-      for (const detached of ReactivePanelUpdater.Dettached) {
-        this.subscribers.delete(detached);
-        ReactivePanelUpdater.Attached.delete(detached);
-      }
-      ReactivePanelUpdater.Dettached.clear();
-      for (const subscriber of this.subscribers.values())
-        subscriber(this.#value);
-    });
+  constructor(private getter: () => T) {
+    this.#value = this.getter();
   }
 
   attach(panel: AddedPanelByView, path: string[]) {
-    ReactivePanelUpdater.Attached.add(panel);
-
     const root = {} as Record<string, any>;
 
     path.reduce((acc, curr, index, { length }) => {
@@ -44,14 +33,37 @@ export default class ReactivePanelUpdater<T> {
 
       panel.update(root as any);
     });
+
+    this.track(panel);
+    this.cleanup ??= $effect.root(() => {
+      $effect(() => this.effect());
+    });
   }
 
-  private static Attached = new Set<AddedPanelByView>();
-  private static Dettached = new Set<AddedPanelByView>();
-
-  static DettachFromAll(panel: AddedPanelByView | IView) {
-    const { Attached, Dettached } = ReactivePanelUpdater;
-    if (Attached.has(panel as AddedPanelByView))
-      Dettached.add(panel as AddedPanelByView);
+  detach(panel: AddedPanelByView) {
+    this.subscribers.delete(panel);
+    if (this.subscribers.size > 0) return;
+    this.cleanup?.();
+    this.cleanup = undefined;
   }
+
+  private effect() {
+    this.#value = this.getter();
+    for (const subscriber of this.subscribers.values()) subscriber(this.#value);
+  }
+
+  private track(panel: AddedPanelByView) {
+    const { ByPanel } = ReactivePanelUpdater;
+    ByPanel.get(panel)?.push(this) ?? ByPanel.set(panel, [this]);
+  }
+
+  static Detach = (panel: AddedPanelByView | IView) =>
+    ReactivePanelUpdater.ByPanel.get(panel as AddedPanelByView)?.forEach(
+      (effect) => effect.detach(panel as AddedPanelByView)
+    );
+
+  private static readonly ByPanel = new Map<
+    AddedPanelByView,
+    ReactivePanelUpdater<any>[]
+  >();
 }

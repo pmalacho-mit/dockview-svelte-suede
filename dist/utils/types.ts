@@ -105,3 +105,13 @@ export type Mounted<
 export type AsNonReadonly<T extends object> = {
   -readonly [K in keyof T]: T[K];
 };
+
+export type TryGet<Key extends string, T> = Key extends keyof T
+  ? Exclude<T[Key], undefined>
+  : never;
+
+export type Chainable<T, TReturn = never> = {
+  [K in keyof T]-?: (
+    value: T[K]
+  ) => TReturn extends never ? Chainable<T> : Chainable<T, TReturn> & TReturn;
+};
