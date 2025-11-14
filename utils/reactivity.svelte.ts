@@ -3,25 +3,33 @@ import type { AddedPanelByView } from "./index.js";
 
 export default class ReactivePanelUpdater<T> {
   #value?: T;
-  private subscribers = new Map<AddedPanelByView, (value: T) => void>();
+
+  private readonly effect: () => void;
+  private readonly subscribers = new Map<
+    AddedPanelByView,
+    (value: T) => void
+  >();
   private cleanup?: () => void;
 
   get value() {
     return this.#value;
   }
 
-  constructor(private getter: () => T) {
-    this.#value = this.getter();
+  constructor(getter: () => T) {
+    this.#value = getter();
+    this.effect = () => {
+      const value = getter();
+      this.#value = value;
+      for (const subscriber of this.subscribers.values()) subscriber(value);
+    };
   }
 
   attach(panel: AddedPanelByView, path: string[]) {
-    const root = {} as Record<string, any>;
-
-    path.reduce((acc, curr, index, { length }) => {
+    const root = path.reduce((acc, curr, index, { length }) => {
       const isLast = index === length - 1;
       acc[curr] = isLast ? this.#value : {};
       return acc;
-    }, root!);
+    }, {} as Record<string, any>);
 
     this.subscribers.set(panel, (value: T) => {
       path.reduce((acc, curr, index, { length }) => {
@@ -36,7 +44,7 @@ export default class ReactivePanelUpdater<T> {
 
     this.track(panel);
     this.cleanup ??= $effect.root(() => {
-      $effect(() => this.effect());
+      $effect(this.effect);
     });
   }
 
@@ -45,11 +53,6 @@ export default class ReactivePanelUpdater<T> {
     if (this.subscribers.size > 0) return;
     this.cleanup?.();
     this.cleanup = undefined;
-  }
-
-  private effect() {
-    this.#value = this.getter();
-    for (const subscriber of this.subscribers.values()) subscriber(this.#value);
   }
 
   private track(panel: AddedPanelByView) {
