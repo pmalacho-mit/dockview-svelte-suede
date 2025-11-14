@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "dockview": "^4.11.0",
+    "dockview-core": "^4.11.0"
+  }
+}
