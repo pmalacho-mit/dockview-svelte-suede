@@ -1,5 +1,10 @@
 <script lang="ts">
-  import { DockView, themeOptions } from "../dist/index";
+  import {
+    DockView,
+    themeOptions,
+    type PanelProps,
+    type ViewsHelper,
+  } from "../dist/index";
   import { panel } from "../dist/config";
   import { animateSize } from "../dist/animate";
   import "../dist/styles/dockview.css";
@@ -8,7 +13,18 @@
   let name = $state(Math.random().toString(36).substring(2, 15));
 
   let theme = $state(themeOptions[0]);
+
+  type X = ViewsHelper<{
+    dock: {
+      type: "dock";
+      Dummy: typeof Dummy;
+    };
+  }>;
 </script>
+
+{#snippet x({ params }: PanelProps<"dock", { name: string }>)}
+  Hello, {params.name}!!!
+{/snippet}
 
 <div style:width="100%" style:height="100%">
   <label for="theme">Theme:</label>
@@ -22,7 +38,11 @@
   <DockView
     {theme}
     components={{ Dummy }}
-    snippets={{}}
+    snippets={{ x }}
+    tabs={{
+      components: {},
+      snippets: {},
+    }}
     onReady={async ({ api }) => {
       const signal = api.reactive(() => name);
       const first = await api.addComponentPanel(
@@ -30,6 +50,8 @@
         { name: signal },
         panel("dock").title("first")()
       );
+
+      api.addSnippetPanel("x", { name: signal });
 
       const second = await api.addComponentPanel(
         "Dummy",
