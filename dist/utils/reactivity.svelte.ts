@@ -2,32 +2,28 @@ import type { IView } from "dockview-core";
 import type { AddedPanelByView } from "./index.js";
 
 export default class ReactivePanelUpdater<T> {
-  #value?: T;
-
-  private readonly effect: () => void;
-  private readonly subscribers = new Map<
-    AddedPanelByView,
-    (value: T) => void
-  >();
-  private cleanup?: () => void;
-
   get value() {
-    return this.#value;
+    return this.current;
   }
 
+  private current?: T;
+  private readonly effect: () => void;
+  private readonly subscribers: SubscriberMap<T> = new Map();
+  private cleanup?: () => void;
+
   constructor(getter: () => T) {
-    this.#value = getter();
+    this.current = getter();
     this.effect = () => {
-      const value = getter();
-      this.#value = value;
-      for (const subscriber of this.subscribers.values()) subscriber(value);
+      const current = getter();
+      this.current = current;
+      this.subscribers.forEach((subscriber) => subscriber(current));
     };
   }
 
   attach(panel: AddedPanelByView, path: string[]) {
     const root = path.reduce((acc, curr, index, { length }) => {
       const isLast = index === length - 1;
-      acc[curr] = isLast ? this.#value : {};
+      acc[curr] = isLast ? this.current : {};
       return acc;
     }, {} as Record<string, any>);
 
@@ -65,8 +61,8 @@ export default class ReactivePanelUpdater<T> {
       (effect) => effect.detach(panel as AddedPanelByView)
     );
 
-  private static readonly ByPanel = new Map<
-    AddedPanelByView,
-    ReactivePanelUpdater<any>[]
-  >();
+  private static readonly ByPanel: PanelMap = new Map();
 }
+
+type SubscriberMap<T> = Map<AddedPanelByView, (value: T) => void>;
+type PanelMap = Map<AddedPanelByView, ReactivePanelUpdater<any>[]>;
