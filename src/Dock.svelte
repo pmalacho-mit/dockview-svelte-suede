@@ -4,10 +4,10 @@
     themeOptions,
     type PanelProps,
     type ViewsHelper,
-  } from "../dist/index";
-  import { panel } from "../dist/config";
-  import { animateSize } from "../dist/animate";
-  import "../dist/styles/dockview.css";
+  } from "../release/index";
+  import { panel } from "../release/config";
+  import { animateSize } from "../release/animate";
+  import "../release/styles/dockview.css";
   import Dummy from "./dummy/Wrapped.svelte";
 
   let name = $state(Math.random().toString(36).substring(2, 15));
