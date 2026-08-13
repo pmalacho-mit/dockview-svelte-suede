@@ -14,6 +14,7 @@
     getComponentToMount,
     mappedDockviewOptionKeys,
     snippetIntoParams,
+    type ITabContextMenuProps,
     type MappedDockviewOptionKey,
     type ComponentsConstraint,
     type CustomComponentConstraint,
@@ -32,6 +33,7 @@
     SvelteDockComponentRenderer,
     SvelteTabGroupChipRenderer,
     SvelteGroupDragGhostRenderer,
+    type OnTabContextMenu,
   } from "./dock/index.js";
 
   let dockCount = 0;
@@ -147,10 +149,13 @@
   const PrefixHeaderActions extends DockviewSpecificComponentConstraint[`prefixHeaderActions`],
   const TabGroupChip extends DockviewSpecificComponentConstraint[`tabGroupChip`],
   const GroupDragGhost extends DockviewSpecificComponentConstraint[`groupDragGhost`],
+  const ContextMenu extends DockviewSpecificComponentConstraint[`tabContextMenu`],
 "
 >
   import { onDestroy, onMount } from "svelte";
   import { resolveTheme } from "./utils/themes.js";
+  import DefaultDockTab from "./dock/DefaultDockTab.svelte";
+  import TabContextMenu, { type At } from "./dock/TabContextMenu.svelte";
 
   type DockSpecific = {
     tabs: {
@@ -164,6 +169,7 @@
     prefixHeaderActions: PrefixHeaderActions;
     tabGroupChip: TabGroupChip;
     groupDragGhost: GroupDragGhost;
+    tabContextMenu: ContextMenu;
   };
 
   type Props = RecursivePartial<DockSpecific> &
@@ -183,6 +189,7 @@
     prefixHeaderActions,
     tabGroupChip,
     groupDragGhost,
+    tabContextMenu,
     onReady,
     onDidDrop,
     onWillDrop,
@@ -191,21 +198,45 @@
 
   const theme = $derived(resolveTheme(_theme));
 
+  let openMenu = $state<{ at: At; target: ITabContextMenuProps }>();
+
+  const closeTabContextMenu = () => (openMenu = undefined);
+
+  const openTabContextMenu: OnTabContextMenu = (event, target) => {
+    event.preventDefault();
+    openMenu = {
+      at: { x: event.clientX, y: event.clientY },
+      target: { ...target, close: closeTabContextMenu },
+    };
+  };
+
   let dockView: ViewAPI<"dock", Components, Snippets>;
 
   for (const key of forwardedOptionKeys)
     $effect(() => dockView!?.updateOptions({ [key]: props[key] }));
+
+  /**
+   * A context menu can only be hooked onto a tab we render ourselves, so
+   * configuring one settles what an unnamed tab falls back to.
+   */
+  const defaultTabDetail = (defaultTab ??
+    (tabContextMenu ? { component: DefaultDockTab } : undefined)) as
+    | DefaultTab
+    | undefined;
+
+  const onContextMenu = tabContextMenu ? openTabContextMenu : undefined;
 
   const createTabComponent = (
     options: Parameters<
       Required<DockviewFrameworkOptions>["createTabComponent"]
     >[0]
   ) => {
-    if (defaultTab && options.name === defaultTabName)
+    if (defaultTabDetail && options.name === defaultTabName)
       return new SvelteDockHeaderRenderer({
         id: options.id,
         viewIndex: index,
-        ...mountable(defaultTab as DefaultTab, "defaultTab"),
+        onContextMenu,
+        ...mountable(defaultTabDetail, "defaultTab"),
       });
 
     const { component, propsPostProcessor, name } = getComponentToMount(
@@ -221,6 +252,7 @@
       viewIndex: index,
       svelteComponent: component,
       propsPostProcessor,
+      onContextMenu,
     });
   };
 
@@ -256,7 +288,8 @@
         propsPostProcessor,
       });
     },
-    createTabComponent: tabs || defaultTab ? createTabComponent : undefined,
+    createTabComponent:
+      tabs || defaultTabDetail ? createTabComponent : undefined,
     createWatermarkComponent: watermark
       ? () =>
           new SvelteWatermarkRenderer({
@@ -273,7 +306,7 @@
     const api = createDockview(element!, {
       ...extractCoreOptions(props, forwardedOptionKeys),
       ...frameworkOptions,
-      defaultTabComponent: defaultTab ? defaultTabName : undefined,
+      defaultTabComponent: defaultTabDetail ? defaultTabName : undefined,
       createTabGroupChipComponent: createTabGroupChip(
         index,
         tabGroupChip as TabGroupChip
@@ -319,3 +352,11 @@
   style:width="100%"
   style:height="100%"
 ></div>
+
+{#if openMenu && tabContextMenu}
+  <TabContextMenu
+    at={openMenu.at}
+    target={openMenu.target}
+    menu={tabContextMenu as ContextMenu}
+  />
+{/if}

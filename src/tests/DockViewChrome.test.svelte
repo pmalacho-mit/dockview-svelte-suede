@@ -11,6 +11,7 @@
     DockView,
     themes,
     type DockviewTheme,
+    type ITabContextMenuProps,
     type ITabGroupChipProps,
     type Theme,
     type ViewAPI,
@@ -51,6 +52,19 @@
    * answers that by cancelling the click it would otherwise emulate.
    */
   const clickThroughPointerdownGuard = (element: HTMLElement) => element.click();
+
+  const defaultTabIn = (container: HTMLElement) =>
+    rendered.only(container, "dockview-dv-default-tab");
+
+  const rightClick = (element: HTMLElement, { x, y }: { x: number; y: number }) =>
+    element.dispatchEvent(
+      new MouseEvent("contextmenu", {
+        bubbles: true,
+        cancelable: true,
+        clientX: x,
+        clientY: y,
+      })
+    );
 
   const closeButton = (container: HTMLElement) => {
     const tab = rendered.only(container, "dockview-dv-default-tab");
@@ -324,6 +338,105 @@
     </div>
   {/snippet}
 </Sweater>
+
+<Sweater
+  name="a tab context menu opens where the tab was right-clicked"
+  body={async (harness) => {
+    harness.set(new ViewPocket<Api>());
+    const { api } = await harness.definition("api");
+
+    await api.addComponentPanel(
+      "Label",
+      { text: "first" },
+      panel("dock").id("first").title("First")()
+    );
+
+    rightClick(defaultTabIn(harness.container), { x: 40, y: 12 });
+    await harness.delay({ frames: 2 });
+
+    harness.capture("png");
+    harness.expect(rendered.texts(harness.container, "menu-item")).toEqual([
+      "close First",
+    ]);
+  }}
+>
+  {#snippet vest(pocket: Pocket)}
+    {@render withContextMenu(pocket.ready)}
+  {/snippet}
+</Sweater>
+
+<Sweater
+  name="a context menu item acts on the panel it was opened from"
+  body={async (harness) => {
+    harness.set(new ViewPocket<Api>());
+    const { api } = await harness.definition("api");
+
+    await api.addComponentPanel("Label", { text: "first" });
+
+    rightClick(defaultTabIn(harness.container), { x: 40, y: 12 });
+    await harness.delay({ frames: 2 });
+
+    rendered.only(harness.container, "menu-item").click();
+    await harness.delay({ frames: 2 });
+
+    harness.expect(api.panels).toHaveLength(0);
+    harness.expect(rendered.all(harness.container, "menu-item")).toEqual([]);
+  }}
+>
+  {#snippet vest(pocket: Pocket)}
+    {@render withContextMenu(pocket.ready)}
+  {/snippet}
+</Sweater>
+
+<Sweater
+  name="a context menu is dismissed by Escape"
+  body={async (harness) => {
+    harness.set(new ViewPocket<Api>());
+    const { api } = await harness.definition("api");
+
+    await api.addComponentPanel("Label", { text: "first" });
+
+    rightClick(defaultTabIn(harness.container), { x: 40, y: 12 });
+    await harness.delay({ frames: 2 });
+    harness.expect(rendered.all(harness.container, "menu-item")).toHaveLength(1);
+
+    await harness.withUserFocus(async (user) => {
+      await user.keyboard("{Escape}");
+    });
+    await harness.delay({ frames: 2 });
+
+    harness.expect(rendered.all(harness.container, "menu-item")).toEqual([]);
+    harness.expect(api.panels).toHaveLength(1);
+  }}
+>
+  {#snippet vest(pocket: Pocket)}
+    {@render withContextMenu(pocket.ready)}
+  {/snippet}
+</Sweater>
+
+{#snippet contextMenu({ panel, close }: ITabContextMenuProps)}
+  <button
+    type="button"
+    data-testid="menu-item"
+    onclick={() => {
+      panel.api.close();
+      close();
+    }}
+  >
+    close {panel.title}
+  </button>
+{/snippet}
+
+{#snippet withContextMenu(onReady: Pocket["ready"])}
+  <div style:width="100%" style:height="100%">
+    <DockView
+      theme="dark"
+      components={{ Label: DockLabel }}
+      tabContextMenu={{ snippet: contextMenu }}
+      {onReady}
+    />
+  </div>
+{/snippet}
 
 {#snippet chip({ tabGroup }: ITabGroupChipProps)}
   <span data-testid="chip">chip for {tabGroup.label}</span>

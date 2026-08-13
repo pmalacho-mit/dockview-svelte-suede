@@ -24,6 +24,7 @@ import type {
   IDockviewHeaderActionsProps,
   ITabGroupChipRenderer,
   IGroupDragGhostRenderer,
+  DockviewGroupPanel,
   Orientation,
 } from "dockview";
 import { type Component, type Snippet } from "svelte";
@@ -137,6 +138,19 @@ type SnippetOrComponentTuple<TProps extends Record<string, any>> =
   | { component: CustomComponentConstraint<TProps>[string] }
   | { snippet: CustomSnippetsConstraint<TProps>[string] };
 
+/**
+ * What a tab context menu is rendered with. Deliberately the argument shape
+ * upstream's `IContextMenuItemComponentProps` carries, so a later licence
+ * purchase is a swap rather than a rewrite.
+ */
+export type ITabContextMenuProps = {
+  panel: IDockviewPanel;
+  group: DockviewGroupPanel;
+  api: DockviewApi;
+  /** Call to close the context menu */
+  close: () => void;
+};
+
 /** What a tab group chip is rendered with, straight off the renderer contract. */
 export type ITabGroupChipProps = Parameters<ITabGroupChipRenderer["init"]>[0];
 
@@ -149,6 +163,7 @@ export type DockviewSpecificComponentConstraint = {
   watermark: SnippetOrComponentTuple<IWatermarkPanelProps>;
   tabGroupChip: SnippetOrComponentTuple<ITabGroupChipProps>;
   groupDragGhost: SnippetOrComponentTuple<IGroupDragGhostProps>;
+  tabContextMenu: SnippetOrComponentTuple<ITabContextMenuProps>;
   defaultTab: SnippetOrComponentTuple<IDockviewPanelHeaderProps>;
   rightHeaderActions: SnippetOrComponentTuple<IDockviewHeaderActionsProps>;
   leftHeaderActions: SnippetOrComponentTuple<IDockviewHeaderActionsProps>;

@@ -21,7 +21,9 @@ import type {
   IGroupDragGhostRenderer,
   ITabGroup,
   PanelUpdateEvent,
+  DockviewApi,
   DockviewGroupPanel,
+  IDockviewPanel,
 } from "dockview";
 import PanelRendererBase, {
   type ConstructorConfigWithout,
@@ -60,18 +62,60 @@ export class SvelteDockComponentRenderer<Props extends IDockviewPanelProps>
   }
 }
 
+/**
+ * What a tab hands its context menu. Deliberately the argument shape
+ * upstream's `IContextMenuItemComponentProps` carries, less the `close`
+ * the menu itself supplies.
+ */
+export type TabContextMenuTarget = {
+  panel: IDockviewPanel;
+  group: DockviewGroupPanel;
+  api: DockviewApi;
+};
+
+export type OnTabContextMenu = (
+  event: MouseEvent,
+  target: TabContextMenuTarget
+) => void;
+
+const tabContextMenuTarget = ({
+  api,
+  containerApi,
+}: TabPartInitParameters): TabContextMenuTarget | undefined => {
+  const panel = containerApi.getPanel(api.id);
+  return panel && { panel, group: api.group, api: containerApi };
+};
+
 export class SvelteDockHeaderRenderer<Props extends IDockviewPanelHeaderProps>
   extends PanelRendererBase<Props, TabPartInitParameters>
   implements ITabRenderer
 {
+  private readonly onContextMenu?: OnTabContextMenu;
+
   constructor(
-    config: ConstructorConfigWithout<Props, TabPartInitParameters>
+    config: ConstructorConfigWithout<Props, TabPartInitParameters> & {
+      onContextMenu?: OnTabContextMenu;
+    }
   ) {
     super({
       ...config,
       panelTarget: "dockheader",
       initOptionsToProps: ({ params, api, containerApi, tabLocation }) =>
         ({ params, api, containerApi, tabLocation } as Props),
+    });
+
+    this.onContextMenu = config.onContextMenu;
+  }
+
+  init(parameters: TabPartInitParameters): void {
+    super.init(parameters);
+
+    const { onContextMenu } = this;
+    if (!onContextMenu) return;
+
+    this.element.addEventListener("contextmenu", (event) => {
+      const target = tabContextMenuTarget(parameters);
+      if (target) onContextMenu(event, target);
     });
   }
 }
