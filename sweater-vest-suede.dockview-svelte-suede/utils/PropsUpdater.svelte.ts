@@ -1,4 +1,4 @@
-import type { IFrameworkPart } from "dockview-core";
+import type { IFrameworkPart } from "dockview";
 import type { ValueAtPath, Path } from "./types.js";
 
 export type PropsPostProcessor<T extends Record<string, any>> = (

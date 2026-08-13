@@ -11,13 +11,9 @@ import type {
   IDockviewPanelHeaderProps,
   IDockviewPanelProps,
   IWatermarkPanelProps,
-} from "dockview-core";
-import type {
-  IPaneviewPanelProps,
-  ISplitviewPanelProps,
-  IGridviewPanelProps,
 } from "dockview";
 import type {
+  PanelComponentPropsByView,
   ViewKey,
   ComponentsConstraint,
   SnippetsConstraint,
@@ -35,7 +31,7 @@ import themes, {
   type ThemeSetting,
   themeOptions,
 } from "./utils/themes.js";
-import { Orientation } from "dockview-core";
+import { Orientation } from "dockview";
 
 export {
   DockView,
@@ -62,12 +58,7 @@ export type {
 export type PanelProps<
   T extends ViewKey,
   Options extends Record<string, any>
-> = {
-  grid: IGridviewPanelProps<Options>;
-  dock: IDockviewPanelProps<Options>;
-  pane: IPaneviewPanelProps<Options>;
-  split: ISplitviewPanelProps<Options>;
-}[T];
+> = PanelComponentPropsByView<Options>[T];
 
 export type AuxiliaryDockPanelProps = {
   watermark: IWatermarkPanelProps;

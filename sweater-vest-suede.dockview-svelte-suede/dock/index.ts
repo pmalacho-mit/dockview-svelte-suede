@@ -3,22 +3,22 @@ import {
   DockviewEmitter,
   DockviewEvent,
   DockviewMutableDisposable,
-} from "dockview-core";
+} from "dockview";
 import type {
   GroupPanelPartInitParameters,
   IContentRenderer,
   IDockviewPanelProps,
-  IGroupPanelBaseProps,
+  IDockviewPanelHeaderProps,
   ITabRenderer,
+  TabPartInitParameters,
   IWatermarkRenderer,
   IWatermarkPanelProps,
   WatermarkRendererInitParameters,
-  DockviewApi,
-  DockviewGroupPanelApi,
   IDockviewHeaderActionsProps,
+  IGroupHeaderProps,
   IHeaderActionsRenderer,
   DockviewGroupPanel,
-} from "dockview-core";
+} from "dockview";
 import PanelRendererBase, {
   type ConstructorConfigWithout,
 } from "../utils/PanelRendererBase.js";
@@ -52,18 +52,18 @@ export class SvelteDockComponentRenderer<Props extends IDockviewPanelProps>
   }
 }
 
-export class SvelteDockHeaderRenderer<Props extends IGroupPanelBaseProps>
-  extends PanelRendererBase<Props, GroupPanelPartInitParameters>
+export class SvelteDockHeaderRenderer<Props extends IDockviewPanelHeaderProps>
+  extends PanelRendererBase<Props, TabPartInitParameters>
   implements ITabRenderer
 {
   constructor(
-    config: ConstructorConfigWithout<Props, GroupPanelPartInitParameters>
+    config: ConstructorConfigWithout<Props, TabPartInitParameters>
   ) {
     super({
       ...config,
       panelTarget: "dockheader",
-      initOptionsToProps: ({ params, api, containerApi }) =>
-        ({ params, api, containerApi } as Props),
+      initOptionsToProps: ({ params, api, containerApi, tabLocation }) =>
+        ({ params, api, containerApi, tabLocation } as Props),
     });
   }
 }
@@ -85,15 +85,21 @@ export class SvelteWatermarkRenderer<Props extends IWatermarkPanelProps>
   }
 }
 
-type ActionsHeaderInitParameters = {
-  containerApi: DockviewApi;
-  api: DockviewGroupPanelApi;
-};
+/** The header action props that track their group rather than sitting still. */
+const liveHeaderActionProps = (group: DockviewGroupPanel) => ({
+  panels: group.model.panels,
+  activePanel: group.model.activePanel,
+  isGroupActive: group.api.isActive,
+  headerPosition: group.api.getHeaderPosition(),
+  location: group.api.location,
+});
+
+type LiveHeaderActionProps = ReturnType<typeof liveHeaderActionProps>;
 
 export class SvelteDockActionsHeaderRenderer<
     Props extends IDockviewHeaderActionsProps
   >
-  extends PanelRendererBase<Props, ActionsHeaderInitParameters>
+  extends PanelRendererBase<Props, IGroupHeaderProps>
   implements IHeaderActionsRenderer
 {
   private readonly mutableDisposable = new DockviewMutableDisposable();
@@ -101,7 +107,7 @@ export class SvelteDockActionsHeaderRenderer<
 
   constructor(
     group: DockviewGroupPanel,
-    config: ConstructorConfigWithout<Props, ActionsHeaderInitParameters>
+    config: ConstructorConfigWithout<Props, IGroupHeaderProps>
   ) {
     super({
       ...config,
@@ -112,24 +118,23 @@ export class SvelteDockActionsHeaderRenderer<
           api,
           containerApi,
           group,
-          panels: group.model.panels,
-          activePanel: group.model.activePanel,
-          isGroupActive: group.api.isActive,
+          ...liveHeaderActionProps(group),
         } as Props),
     });
 
     this.group = group;
   }
 
-  init(parameters: {
-    containerApi: DockviewApi;
-    api: DockviewGroupPanelApi;
-  }): void {
+  init(parameters: IGroupHeaderProps): void {
+    const { model, api } = this.group;
+
     this.mutableDisposable.value = new DockviewCompositeDisposable(
-      this.group.model.onDidAddPanel(() => this.updatePanels()),
-      this.group.model.onDidRemovePanel(() => this.updatePanels()),
-      this.group.model.onDidActivePanelChange(() => this.updateActivePanel()),
-      parameters.api.onDidActiveChange(() => this.updateGroupActive())
+      model.onDidAddPanel(this.refresh("panels")),
+      model.onDidRemovePanel(this.refresh("panels")),
+      model.onDidActivePanelChange(this.refresh("activePanel")),
+      api.onDidActiveChange(this.refresh("isGroupActive")),
+      api.onDidHeaderDirectionChange(this.refresh("headerPosition")),
+      api.onDidLocationChange(this.refresh("location"))
     );
 
     super.init(parameters);
@@ -140,21 +145,11 @@ export class SvelteDockActionsHeaderRenderer<
     this.mutableDisposable.dispose();
   }
 
-  private updatePanels(): void {
-    (
-      this.propsUpdater as unknown as PropsUpdater<IDockviewHeaderActionsProps>
-    )?.updateSingle("panels", this.group.model.panels);
-  }
-
-  private updateActivePanel(): void {
-    (
-      this.propsUpdater as unknown as PropsUpdater<IDockviewHeaderActionsProps>
-    )?.updateSingle("activePanel", this.group.model.activePanel);
-  }
-
-  private updateGroupActive(): void {
-    (
-      this.propsUpdater as unknown as PropsUpdater<IDockviewHeaderActionsProps>
-    )?.updateSingle("isGroupActive", this.group.api.isActive);
-  }
+  private refresh =
+    <Key extends keyof LiveHeaderActionProps>(key: Key) =>
+    (): void => {
+      (
+        this.propsUpdater as unknown as PropsUpdater<IDockviewHeaderActionsProps>
+      )?.updateSingle(key, liveHeaderActionProps(this.group)[key]);
+    };
 }

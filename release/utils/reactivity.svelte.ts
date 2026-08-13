@@ -1,4 +1,4 @@
-import type { IView } from "dockview-core";
+import type { IView } from "dockview";
 import type { AddedPanelByView } from "./index.js";
 
 export default class ReactivePanelUpdater<T> {

@@ -5,7 +5,7 @@
     PROPERTY_KEYS_DOCKVIEW,
     type DockviewFrameworkOptions,
     type IHeaderActionsRenderer,
-  } from "dockview-core";
+  } from "dockview";
   import type { RecursivePartial } from "./utils/types.js";
   import {
     createExtendedAPI,

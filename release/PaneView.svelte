@@ -5,7 +5,7 @@
     PROPERTY_KEYS_PANEVIEW,
     type PaneviewFrameworkOptions,
     createPaneview,
-  } from "dockview-core";
+  } from "dockview";
   import {
     type ComponentsConstraint,
     type SelectivelyRequiredPanelComponentPropsByView,

@@ -3,7 +3,7 @@
     IDockviewHeaderActionsProps,
     IDockviewPanelHeaderProps,
     IWatermarkPanelProps,
-  } from "dockview-core";
+  } from "dockview";
   import { Sweater } from "../../sweater-vest-suede";
   import {
     DefaultDockTab,
@@ -69,6 +69,28 @@
     harness.capture("png");
     harness.expect(rendered.texts(harness.container, "tab")).toEqual([
       "tab for first",
+    ]);
+  }}
+>
+  {#snippet vest(pocket: Pocket)}
+    {@render tabbed(pocket.ready)}
+  {/snippet}
+</Sweater>
+
+<Sweater
+  name="a tab component is told where it is rendered"
+  body={async (harness) => {
+    harness.set(new ViewPocket<Api>());
+    const { api } = await harness.definition("api");
+
+    await api.addComponentPanel(
+      "Label",
+      { text: "first" },
+      withTab("Tab", "first")
+    );
+
+    harness.expect(rendered.texts(harness.container, "tab-location")).toEqual([
+      "header",
     ]);
   }}
 >

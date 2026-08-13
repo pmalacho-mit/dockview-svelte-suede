@@ -1,4 +1,4 @@
-import type { PanelUpdateEvent } from "dockview-core";
+import type { PanelUpdateEvent } from "dockview";
 import { type Component, mount, unmount } from "svelte";
 import {
   PropsUpdater,

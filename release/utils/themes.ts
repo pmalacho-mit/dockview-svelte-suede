@@ -1,4 +1,4 @@
-import type { DockviewTheme } from "dockview-core";
+import type { DockviewTheme } from "dockview";
 import {
   themeDark as dark,
   themeAbyss as abyss,
@@ -18,7 +18,7 @@ import {
   themeGithubDarkSpaced as githubDarkSpaced,
   themeGithubLight as githubLight,
   themeGithubLightSpaced as githubLightSpaced,
-} from "dockview-core";
+} from "dockview";
 
 const themes = {
   dark,
