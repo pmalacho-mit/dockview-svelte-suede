@@ -16,7 +16,7 @@
   import type { Params } from "./fixtures/Label.svelte";
   import DockLabel from "./fixtures/DockLabel.svelte";
   import DockTab from "./fixtures/DockTab.svelte";
-  import { labels, rendered, ViewPocket } from "./support.svelte";
+  import { labels, rendered, themeNames, ViewPocket } from "./support.svelte";
 
   type Api = ViewAPI<"dock", { Label: typeof DockLabel }>;
 
@@ -28,11 +28,6 @@
 
   const withTab = (name: string, id: string) =>
     panel("dock").id(id).tabComponent(name)();
-
-  const themeNames = (container: HTMLElement) =>
-    Array.from(container.querySelectorAll<HTMLElement>("[class]"))
-      .flatMap(({ classList }) => Array.from(classList))
-      .filter((name) => name.startsWith("dockview-theme-"));
 
   /**
    * A tab cancels `pointerdown` to keep focus where it was, and `userEvent`

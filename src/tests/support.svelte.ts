@@ -31,6 +31,11 @@ export const rendered = {
 export const labels = (container: HTMLElement) =>
   rendered.texts(container, "label");
 
+export const themeNames = (container: HTMLElement) =>
+  Array.from(container.querySelectorAll<HTMLElement>("[class]"))
+    .flatMap(({ classList }) => Array.from(classList))
+    .filter((name) => name.startsWith("dockview-theme-"));
+
 /** Every view mounts its panels into an element tagged with what it renders. */
 export const mounted = {
   parts: (container: HTMLElement, target: string) =>

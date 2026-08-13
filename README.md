@@ -26,7 +26,8 @@ bash <(curl https://raw.githubusercontent.com/pmalacho-mit/suede/refs/heads/main
 The views in [release/](./release/) are covered by [sweater-vest-suede](./sweater-vest-suede/)
 tests in [src/tests/](./src/tests/), one file per view. They double as worked examples of
 each view: components, snippets, reactive params, placement, dock chrome, pane headers and
-the [animate](./release/animate.ts) helpers.
+the [animate](./release/animate.ts) helpers. `Themes.test.svelte` renders every built-in
+theme, so `npm run report` doubles as a screenshot gallery of the styles.
 
 ```bash
 npm run dev      # then open http://localhost:5173/tests.html and pick a file
