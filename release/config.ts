@@ -19,12 +19,23 @@ export const panel = <T extends ViewKey>(type?: T) => {
 
   type WithReference<T = any> = { reference: T };
 
+  /** Only views that place panels relative to a group have this at all. */
+  type Group = Extract<Position, { referenceGroup: unknown }>["referenceGroup"];
+
+  /** A group itself, its api, or its id — each of them knows the id. */
+  type GroupReference = [Group] extends [never]
+    ? never
+    : Group | { id: string };
+
   interface Customized {
     direction: (
       direction: TryGet<"direction", Position>
     ) => Customized & Chainable<ConfigParameter, Customized>;
     reference: (
       reference: Reference | WithReference<Reference>
+    ) => Customized & Chainable<ConfigParameter, Customized>;
+    group: (
+      group: GroupReference
     ) => Customized & Chainable<ConfigParameter, Customized>;
     (): Exclude<ConfigParameter, undefined>;
   }
@@ -49,6 +60,13 @@ export const panel = <T extends ViewKey>(type?: T) => {
                 : (reference as WithReference).reference;
             return proxy;
           }) satisfies Customized["reference"];
+        case "group":
+          return ((group) => {
+            options["position"] ??= {};
+            options["position"]["referenceGroup"] =
+              typeof group === "string" ? group : (group as { id: string }).id;
+            return proxy;
+          }) satisfies Customized["group"];
         default:
           return (setting: any) => {
             options[prop as string] = setting;

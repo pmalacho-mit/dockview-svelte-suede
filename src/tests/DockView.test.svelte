@@ -216,6 +216,40 @@
   {/snippet}
 </Sweater>
 
+<Sweater
+  name="the panel builder places a panel into an edge group"
+  body={async (harness) => {
+    harness.set(new ViewPocket<Api>());
+    const { api } = await harness.definition("api");
+
+    const edge = api.addEdgeGroup("left", {
+      id: "activity-bar",
+      initialSize: 120,
+    });
+    await api.addComponentPanel(
+      "Label",
+      { text: "in the edge" },
+      panel("dock").group(edge).id("explorer")()
+    );
+    await api.addComponentPanel(
+      "Label",
+      { text: "in the dock" },
+      panel("dock").id("main").direction("right")()
+    );
+
+    const [edgeLabel, dockLabel] = rendered.rects(harness.container, "label");
+
+    harness.capture("png");
+    harness.expect(api.getEdgeGroup("left")?.id).toBe(edge.id);
+    harness.expect(api.getPanel("explorer")?.api.group.id).toBe(edge.id);
+    harness.expect(edgeLabel.left).toBeLessThan(dockLabel.left);
+  }}
+>
+  {#snippet vest(pocket: Pocket)}
+    {@render dock(pocket.ready)}
+  {/snippet}
+</Sweater>
+
 {#snippet label({ params }: PanelProps<"dock", Params>)}
   <span data-testid="label">{params.text}</span>
 {/snippet}
