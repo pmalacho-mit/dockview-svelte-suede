@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "check": "svelte-check --tsconfig ./tsconfig.app.json && tsc -p tsconfig.node.json",
+    "check": "svelte-check --tsconfig ./tsconfig/tsconfig.app.json && tsc -p tsconfig/tsconfig.node.json",
+    "report": "sweater-vest-suede/report.sh --closet /tests.html",
     "copy:style": "mkdir -p dist/styles/ && cp node_modules/dockview/dist/styles/dockview.css dist/styles/"
   },
   "devDependencies": {

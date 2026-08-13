@@ -15,7 +15,14 @@
      */
     "allowJs": true,
     "checkJs": true,
-    "moduleDetection": "force"
+    "moduleDetection": "force",
+    "allowImportingTsExtensions": true
   },
-  "include": ["src/**/*.ts", "src/**/*.js", "src/**/*.svelte", "dist/**/*.ts"]
+  "include": [
+    "../src/**/*.ts",
+    "../src/**/*.js",
+    "../src/**/*.svelte",
+    "../release/**/*.ts",
+    "../release/**/*.svelte"
+  ]
 }

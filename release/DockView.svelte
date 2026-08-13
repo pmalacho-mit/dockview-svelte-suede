@@ -11,7 +11,10 @@
     createExtendedAPI,
     extractCoreOptions,
     getComponentToMount,
+    snippetIntoParams,
     type ComponentsConstraint,
+    type CustomComponentConstraint,
+    type CustomSnippetsConstraint,
     type DockviewSpecificComponentConstraint,
     type DockviewTabConstraint,
     type ModifiedProps,
@@ -40,6 +43,35 @@
       key !== "theme",
   );
 
+  type Renderable<Props extends Record<string, any>> =
+    | { component: CustomComponentConstraint<Props>[string] }
+    | { snippet: CustomSnippetsConstraint<Props>[string] };
+
+  /**
+   * What to hand a renderer so it mounts `detail`, whichever of the two
+   * shapes it was given. Snippets are mounted through `SnippetRender`.
+   */
+  const mountable = <Props extends Record<string, any>>(
+    detail: Renderable<Props>,
+    role: string
+  ) => {
+    if ("component" in detail)
+      return {
+        name: detail.component.name,
+        svelteComponent: detail.component,
+        propsPostProcessor: undefined,
+      };
+
+    if ("snippet" in detail)
+      return {
+        name: role,
+        svelteComponent: SnippetRender as any,
+        propsPostProcessor: snippetIntoParams(() => detail.snippet),
+      };
+
+    throw new Error(`The ${role} is neither a component nor a snippet`);
+  };
+
   type GroupControlElementKey =
     | "leftHeaderActions"
     | "rightHeaderActions"
@@ -50,31 +82,21 @@
     | undefined;
 
   const createGroupControlElement = <Type extends GroupControlElementKey>(
+    viewIndex: number,
+    role: Type,
     detail?: DockviewSpecificComponentConstraint[Type]
   ): CreateGroupControlElement =>
     detail
-      ? (groupPanel: DockviewGroupPanel) => {
-          if ("component" in detail)
-            return new SvelteDockActionsHeaderRenderer(groupPanel, {
-              viewIndex: dockCount,
-              id: groupPanel.id,
-              name: detail.component.name,
-              svelteComponent: detail.component,
-            });
-
-          if ("snippet" in detail)
-            return new SvelteDockActionsHeaderRenderer(groupPanel, {
-              viewIndex: dockCount,
-              id: groupPanel.id,
-              name: detail.snippet.name,
-              svelteComponent: SnippetRender as any,
-              propsPostProcessor: (props: any) =>
-                (props.snippet = detail.snippet),
-            });
-
-          throw new Error("Invalid component and/or snippet");
-        }
+      ? (groupPanel: DockviewGroupPanel) =>
+          new SvelteDockActionsHeaderRenderer(groupPanel, {
+            viewIndex,
+            id: groupPanel.id,
+            ...mountable(detail, role),
+          })
       : undefined;
+
+  /** The name dockview asks for when a panel does not name its own tab. */
+  const defaultTabName = "dockview-svelte-default-tab";
 </script>
 
 <script
@@ -134,14 +156,48 @@
   for (const key of forwardedOptionKeys)
     $effect(() => dockView!?.updateOptions({ [key]: props[key] }));
 
+  const createTabComponent = (
+    options: Parameters<
+      Required<DockviewFrameworkOptions>["createTabComponent"]
+    >[0]
+  ) => {
+    if (defaultTab && options.name === defaultTabName)
+      return new SvelteDockHeaderRenderer({
+        id: options.id,
+        viewIndex: index,
+        ...mountable(defaultTab as DefaultTab, "defaultTab"),
+      });
+
+    const { component, propsPostProcessor, name } = getComponentToMount(
+      "dock",
+      tabs?.components as ComponentsConstraint<"dock">,
+      tabs?.snippets as SnippetsConstraint<"dock">,
+      options
+    );
+
+    return new SvelteDockHeaderRenderer({
+      name,
+      id: options.id,
+      viewIndex: index,
+      svelteComponent: component,
+      propsPostProcessor,
+    });
+  };
+
   const frameworkOptions: DockviewFrameworkOptions = {
     createLeftHeaderActionComponent: createGroupControlElement(
+      index,
+      "leftHeaderActions",
       leftHeaderActions as LeftHeaderActions
     ),
     createRightHeaderActionComponent: createGroupControlElement(
+      index,
+      "rightHeaderActions",
       rightHeaderActions as RightHeaderActions
     ),
     createPrefixHeaderActionComponent: createGroupControlElement(
+      index,
+      "prefixHeaderActions",
       prefixHeaderActions as PrefixHeaderActions
     ),
     createComponent: (options) => {
@@ -160,46 +216,14 @@
         propsPostProcessor,
       });
     },
-    createTabComponent: tabs
-      ? (options) => {
-          const { component, propsPostProcessor, name } = getComponentToMount(
-            "dock",
-            tabs.components as ComponentsConstraint<"dock">,
-            tabs.snippets as SnippetsConstraint<"dock">,
-            options
-          );
-
-          return new SvelteDockHeaderRenderer({
-            name,
-            id: options.id,
-            viewIndex: index,
-            svelteComponent: component,
-            propsPostProcessor,
-          });
-        }
-      : undefined,
+    createTabComponent: tabs || defaultTab ? createTabComponent : undefined,
     createWatermarkComponent: watermark
-      ? () => {
-          if ("component" in watermark)
-            return new SvelteWatermarkRenderer({
-              name: watermark.component.name,
-              id: "watermark",
-              viewIndex: index,
-              svelteComponent: watermark.component,
-            });
-
-          if ("snippet" in watermark)
-            return new SvelteWatermarkRenderer({
-              name: "watermark",
-              id: "watermark",
-              viewIndex: index,
-              svelteComponent: SnippetRender as any,
-              propsPostProcessor: (props: any) =>
-                (props.snippet = watermark.snippet),
-            });
-
-          throw new Error("Invalid watermark component and/or snippet");
-        }
+      ? () =>
+          new SvelteWatermarkRenderer({
+            id: "watermark",
+            viewIndex: index,
+            ...mountable(watermark as Watermark, "watermark"),
+          })
       : undefined,
   };
 
@@ -209,6 +233,7 @@
     const api = createDockview(element!, {
       ...extractCoreOptions(props, forwardedOptionKeys),
       ...frameworkOptions,
+      defaultTabComponent: defaultTab ? defaultTabName : undefined,
       theme,
     });
 

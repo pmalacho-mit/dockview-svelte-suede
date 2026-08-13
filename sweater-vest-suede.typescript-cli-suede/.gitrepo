@@ -4,9 +4,9 @@
 ; by the git-subrepo command. See https://github.com/ingydotnet/git-subrepo#readme
 ;
 [subrepo]
-	remote = git@github.com:pmalacho-mit/dockview-svelte-suede.git
+	remote = git@github.com:pmalacho-mit/typescript-cli-suede.git
 	branch = release
-	commit = 78f12441d6dde01938f94e1c391eac48d858fb25
-	parent = 2c663cb4fdabd7be005a7a5817a1daf0bed2a6c1
+	commit = 18af2323b291392bde2befcead9bc8ea180795e3
+	parent = d7f0585c1bbd089e01555c9ec6fed229299b988c
 	method = merge
 	cmdver = 0.4.9
