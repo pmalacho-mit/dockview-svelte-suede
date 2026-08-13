@@ -454,17 +454,22 @@ export const createExtendedAPI = <
   } satisfies Target;
 };
 
-const getSnippetPostProcessor =
-  <ViewType extends ViewKey, Snippets extends SnippetsConstraint<ViewType>>(
-    snippets: Snippets,
-    name: string
-  ) =>
-  (props: PanelComponentProps) => {
-    const snippet = snippets[name];
-    if (props?.params?.snippet === snippet) return;
-    props.params ??= {};
-    props.params.snippet = snippet;
+/** `SnippetRender` reads the snippet it renders out of `params`. */
+export const snippetIntoParams =
+  (select: () => Snippet<any> | undefined) =>
+  (props: any): void => {
+    const snippet = select();
+    if (props.params?.snippet === snippet) return;
+    (props.params ??= {}).snippet = snippet;
   };
+
+const getSnippetPostProcessor = <
+  ViewType extends ViewKey,
+  Snippets extends SnippetsConstraint<ViewType>
+>(
+  snippets: Snippets,
+  name: string
+) => snippetIntoParams(() => snippets[name]);
 
 const CastedSnippetRender = SnippetRender as any as ConstrainedComponent;
 

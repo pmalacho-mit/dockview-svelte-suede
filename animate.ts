@@ -1,5 +1,5 @@
-import { ViewAPI } from ".";
-import { AddedPanelByView } from "./utils";
+import type { ViewAPI } from "./index.js";
+import type { AddedPanelByView } from "./utils/index.js";
 
 export const defaultDuration = 500;
 
