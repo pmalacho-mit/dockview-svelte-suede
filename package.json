@@ -27,8 +27,8 @@
     "vite": "npm:rolldown-vite@7.2.2"
   },
   "dependencies": {
-    "dockview": "^4.13.1",
-    "dockview-core": "^4.13.1",
+    "dockview": "^6.6.1",
+    "dockview-core": "^6.6.1",
     "svelte": "^5.43.5",
     "typescript": "~5.9.3"
   }

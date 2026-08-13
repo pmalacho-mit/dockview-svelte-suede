@@ -8,6 +8,8 @@
   import {
     DefaultDockTab,
     DockView,
+    themes,
+    type DockviewTheme,
     type Theme,
     type ViewAPI,
   } from "../../release";
@@ -25,6 +27,12 @@
   class Restyled extends ViewPocket<Api> {
     theme = $state<Theme>("dark");
   }
+
+  /** Settings like `tabAnimation` are reachable only through a theme object. */
+  const handRolled = {
+    ...themes.dark,
+    tabAnimation: "smooth",
+  } satisfies DockviewTheme;
 
   const withTab = (name: string, id: string) =>
     panel("dock").id(id).tabComponent(name)();
@@ -227,6 +235,30 @@
     <div style:width="100%" style:height="100%">
       <DockView
         theme={pocket.theme}
+        components={{ Label: DockLabel }}
+        onReady={pocket.ready}
+      />
+    </div>
+  {/snippet}
+</Sweater>
+
+<Sweater
+  name="the theme prop also takes a theme object"
+  body={async (harness) => {
+    harness.set(new ViewPocket<Api>());
+    const { api } = await harness.definition("api");
+
+    await api.addComponentPanel("Label", { text: "first" });
+
+    harness.expect(themeNames(harness.container)).toEqual([
+      handRolled.className,
+    ]);
+  }}
+>
+  {#snippet vest(pocket: Pocket)}
+    <div style:width="100%" style:height="100%">
+      <DockView
+        theme={handRolled}
         components={{ Label: DockLabel }}
         onReady={pocket.ready}
       />

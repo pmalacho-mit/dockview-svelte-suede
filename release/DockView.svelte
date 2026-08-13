@@ -114,7 +114,7 @@
 "
 >
   import { onDestroy, onMount } from "svelte";
-  import themes from "./utils/themes.js";
+  import { resolveTheme } from "./utils/themes.js";
 
   type DockSpecific = {
     tabs: {
@@ -149,7 +149,7 @@
     ...props
   }: Props = $props();
 
-  const theme = $derived(themes[_theme]);
+  const theme = $derived(resolveTheme(_theme));
 
   let dockView: ViewAPI<"dock", Components, Snippets>;
 

@@ -38,7 +38,7 @@ import type {
 } from "./types.js";
 import PanelRendererBase from "./PanelRendererBase.js";
 import ReactivePanelUpdater from "./reactivity.svelte.js";
-import type { Theme } from "./themes";
+import type { ThemeSetting } from "./themes";
 
 /**
  * The props for the React version of the different view components
@@ -299,7 +299,7 @@ type CustomizedViewProps<
 } & ("orientation" extends keyof RawViewProps<ViewType>
   ? { orientation: Orientation | "HORIZONTAL" | "VERTICAL" }
   : {}) &
-  (ViewType extends "dock" ? { theme: Theme } : {});
+  (ViewType extends "dock" ? { theme: ThemeSetting } : {});
 
 type OverridenDockviewReactPropNames =
   | "tabComponents"

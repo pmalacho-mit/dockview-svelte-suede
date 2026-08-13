@@ -38,7 +38,7 @@ import type {
 } from "./types.js";
 import PanelRendererBase from "./PanelRendererBase.js";
 import ReactivePanelUpdater from "./reactivity.svelte.js";
-import type { Theme } from "./themes";
+import type { ThemeSetting } from "./themes";
 
 /**
  * The props for the React version of the different view components
@@ -299,7 +299,7 @@ type CustomizedViewProps<
 } & ("orientation" extends keyof RawViewProps<ViewType>
   ? { orientation: Orientation | "HORIZONTAL" | "VERTICAL" }
   : {}) &
-  (ViewType extends "dock" ? { theme: Theme } : {});
+  (ViewType extends "dock" ? { theme: ThemeSetting } : {});
 
 type OverridenDockviewReactPropNames =
   | "tabComponents"
@@ -454,17 +454,22 @@ export const createExtendedAPI = <
   } satisfies Target;
 };
 
-const getSnippetPostProcessor =
-  <ViewType extends ViewKey, Snippets extends SnippetsConstraint<ViewType>>(
-    snippets: Snippets,
-    name: string
-  ) =>
-  (props: PanelComponentProps) => {
-    const snippet = snippets[name];
-    if (props?.params?.snippet === snippet) return;
-    props.params ??= {};
-    props.params.snippet = snippet;
+/** `SnippetRender` reads the snippet it renders out of `params`. */
+export const snippetIntoParams =
+  (select: () => Snippet<any> | undefined) =>
+  (props: any): void => {
+    const snippet = select();
+    if (props.params?.snippet === snippet) return;
+    (props.params ??= {}).snippet = snippet;
   };
+
+const getSnippetPostProcessor = <
+  ViewType extends ViewKey,
+  Snippets extends SnippetsConstraint<ViewType>
+>(
+  snippets: Snippets,
+  name: string
+) => snippetIntoParams(() => snippets[name]);
 
 const CastedSnippetRender = SnippetRender as any as ConstrainedComponent;
 

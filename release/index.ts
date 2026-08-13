@@ -6,6 +6,7 @@ import DefaultDockTab, {
   type Props as DefaultDockTabProps,
 } from "./dock/DefaultDockTab.svelte";
 import type {
+  DockviewTheme,
   IDockviewHeaderActionsProps,
   IDockviewPanelHeaderProps,
   IDockviewPanelProps,
@@ -29,7 +30,11 @@ import type {
   Renderables,
 } from "./utils/index.js";
 import { reactive } from "./utils/index.js";
-import themes, { type Theme, themeOptions } from "./utils/themes.js";
+import themes, {
+  type Theme,
+  type ThemeSetting,
+  themeOptions,
+} from "./utils/themes.js";
 import { Orientation } from "dockview-core";
 
 export {
@@ -48,6 +53,8 @@ export type {
   AddedPanelByView,
   ViewKey,
   Theme,
+  ThemeSetting,
+  DockviewTheme,
   DefaultDockTabProps,
   Renderables,
 };
