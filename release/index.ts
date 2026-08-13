@@ -29,6 +29,11 @@ import type {
   Renderables,
 } from "./utils/index.js";
 import { reactive } from "./utils/index.js";
+import {
+  createLayoutHistory,
+  type LayoutHistory,
+  type LayoutHistoryOptions,
+} from "./history.js";
 import themes, {
   type Theme,
   type ThemeSetting,
@@ -46,6 +51,7 @@ export {
   themes,
   themeOptions,
   DefaultDockTab,
+  createLayoutHistory,
 };
 
 export type {
@@ -57,6 +63,8 @@ export type {
   ITabContextMenuProps,
   ITabGroupChipProps,
   IGroupDragGhostProps,
+  LayoutHistory,
+  LayoutHistoryOptions,
   DefaultDockTabProps,
   Renderables,
 };
