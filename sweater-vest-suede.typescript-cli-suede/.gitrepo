@@ -7,6 +7,6 @@
 	remote = git@github.com:pmalacho-mit/typescript-cli-suede.git
 	branch = release
 	commit = 18af2323b291392bde2befcead9bc8ea180795e3
-	parent = d7f0585c1bbd089e01555c9ec6fed229299b988c
+	parent = 7ea529a2df9a39948f9f5df4e40e89202749ae13
 	method = merge
 	cmdver = 0.4.9
