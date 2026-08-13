@@ -13,6 +13,8 @@ import type {
   IWatermarkPanelProps,
 } from "dockview";
 import type {
+  ITabGroupChipProps,
+  IGroupDragGhostProps,
   PanelComponentPropsByView,
   ViewKey,
   ComponentsConstraint,
@@ -51,6 +53,8 @@ export type {
   Theme,
   ThemeSetting,
   DockviewTheme,
+  ITabGroupChipProps,
+  IGroupDragGhostProps,
   DefaultDockTabProps,
   Renderables,
 };
@@ -64,6 +68,8 @@ export type AuxiliaryDockPanelProps = {
   watermark: IWatermarkPanelProps;
   tab: IDockviewPanelHeaderProps;
   headerAction: IDockviewHeaderActionsProps;
+  tabGroupChip: ITabGroupChipProps;
+  groupDragGhost: IGroupDragGhostProps;
 };
 
 export type ViewProps<

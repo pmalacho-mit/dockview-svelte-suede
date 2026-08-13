@@ -17,12 +17,20 @@ import type {
   IDockviewHeaderActionsProps,
   IGroupHeaderProps,
   IHeaderActionsRenderer,
+  ITabGroupChipRenderer,
+  IGroupDragGhostRenderer,
+  ITabGroup,
+  PanelUpdateEvent,
   DockviewGroupPanel,
 } from "dockview";
 import PanelRendererBase, {
   type ConstructorConfigWithout,
 } from "../utils/PanelRendererBase.js";
 import type { PropsUpdater } from "../utils/PropsUpdater.svelte.js";
+import type {
+  ITabGroupChipProps,
+  IGroupDragGhostProps,
+} from "../utils/index.js";
 
 export class SvelteDockComponentRenderer<Props extends IDockviewPanelProps>
   extends PanelRendererBase<Props, GroupPanelPartInitParameters>
@@ -81,6 +89,43 @@ export class SvelteWatermarkRenderer<Props extends IWatermarkPanelProps>
       panelTarget: "dockwatermark",
       initOptionsToProps: ({ group, containerApi }) =>
         ({ group, containerApi } as Props),
+    });
+  }
+}
+
+export class SvelteTabGroupChipRenderer<Props extends ITabGroupChipProps>
+  extends PanelRendererBase<Props, ITabGroupChipProps>
+  implements ITabGroupChipRenderer
+{
+  constructor(config: ConstructorConfigWithout<Props, ITabGroupChipProps>) {
+    super({
+      ...config,
+      propsHasParams: false,
+      panelTarget: "docktabgroupchip",
+      initOptionsToProps: ({ tabGroup, api }) => ({ tabGroup, api } as Props),
+    });
+  }
+
+  /** A chip is handed its tab group again, where a panel would get `params`. */
+  update(event: PanelUpdateEvent | { tabGroup: ITabGroup }): void {
+    if (!("tabGroup" in event)) return super.update(event);
+
+    (
+      this.propsUpdater as unknown as PropsUpdater<ITabGroupChipProps>
+    )?.updateSingle("tabGroup", event.tabGroup);
+  }
+}
+
+export class SvelteGroupDragGhostRenderer<Props extends IGroupDragGhostProps>
+  extends PanelRendererBase<Props, IGroupDragGhostProps>
+  implements IGroupDragGhostRenderer
+{
+  constructor(config: ConstructorConfigWithout<Props, IGroupDragGhostProps>) {
+    super({
+      ...config,
+      propsHasParams: false,
+      panelTarget: "dockdragghost",
+      initOptionsToProps: ({ group, api }) => ({ group, api } as Props),
     });
   }
 }

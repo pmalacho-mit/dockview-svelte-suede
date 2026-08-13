@@ -4,6 +4,7 @@
     DockviewGroupPanel,
     PROPERTY_KEYS_DOCKVIEW,
     type DockviewFrameworkOptions,
+    type DockviewOptions,
     type IHeaderActionsRenderer,
   } from "dockview";
   import type { RecursivePartial } from "./utils/types.js";
@@ -11,7 +12,9 @@
     createExtendedAPI,
     extractCoreOptions,
     getComponentToMount,
+    mappedDockviewOptionKeys,
     snippetIntoParams,
+    type MappedDockviewOptionKey,
     type ComponentsConstraint,
     type CustomComponentConstraint,
     type CustomSnippetsConstraint,
@@ -27,21 +30,21 @@
     SvelteDockHeaderRenderer,
     SvelteWatermarkRenderer,
     SvelteDockComponentRenderer,
+    SvelteTabGroupChipRenderer,
+    SvelteGroupDragGhostRenderer,
   } from "./dock/index.js";
 
   let dockCount = 0;
 
-  /**
-   * Every dockview option that is forwarded straight from props.
-   *
-   * `theme` is not one of them: it arrives as a theme *name* which this
-   * component maps to a theme object, so it is applied by its own effect.
-   * Forwarding it here would push `undefined` over that mapped value.
-   */
-  const forwardedOptionKeys = PROPERTY_KEYS_DOCKVIEW.filter(
-    (key): key is Exclude<(typeof PROPERTY_KEYS_DOCKVIEW)[number], "theme"> =>
-      key !== "theme",
-  );
+  type DockviewOptionKey = (typeof PROPERTY_KEYS_DOCKVIEW)[number];
+
+  const isForwarded = (
+    key: DockviewOptionKey,
+  ): key is Exclude<DockviewOptionKey, MappedDockviewOptionKey> =>
+    !(mappedDockviewOptionKeys as readonly string[]).includes(key);
+
+  /** Every dockview option that is forwarded straight from props. */
+  const forwardedOptionKeys = PROPERTY_KEYS_DOCKVIEW.filter(isForwarded);
 
   type Renderable<Props extends Record<string, any>> =
     | { component: CustomComponentConstraint<Props>[string] }
@@ -95,6 +98,37 @@
           })
       : undefined;
 
+  /**
+   * The chip labelling a tab group, and the ghost that follows the cursor
+   * while a group is dragged. Both are dockview *options* rather than
+   * framework options, which is why they are built here instead of forwarded.
+   */
+  const createTabGroupChip = (
+    viewIndex: number,
+    detail?: DockviewSpecificComponentConstraint["tabGroupChip"]
+  ): DockviewOptions["createTabGroupChipComponent"] =>
+    detail
+      ? (tabGroup) =>
+          new SvelteTabGroupChipRenderer({
+            viewIndex,
+            id: `tabGroupChip-${tabGroup.id}`,
+            ...mountable(detail, "tabGroupChip"),
+          })
+      : undefined;
+
+  const createGroupDragGhost = (
+    viewIndex: number,
+    detail?: DockviewSpecificComponentConstraint["groupDragGhost"]
+  ): DockviewOptions["createGroupDragGhostComponent"] =>
+    detail
+      ? (group) =>
+          new SvelteGroupDragGhostRenderer({
+            viewIndex,
+            id: `groupDragGhost-${group.id}`,
+            ...mountable(detail, "groupDragGhost"),
+          })
+      : undefined;
+
   /** The name dockview asks for when a panel does not name its own tab. */
   const defaultTabName = "dockview-svelte-default-tab";
 </script>
@@ -111,6 +145,8 @@
   const RightHeaderActions extends DockviewSpecificComponentConstraint[`rightHeaderActions`],
   const LeftHeaderActions extends DockviewSpecificComponentConstraint[`leftHeaderActions`],
   const PrefixHeaderActions extends DockviewSpecificComponentConstraint[`prefixHeaderActions`],
+  const TabGroupChip extends DockviewSpecificComponentConstraint[`tabGroupChip`],
+  const GroupDragGhost extends DockviewSpecificComponentConstraint[`groupDragGhost`],
 "
 >
   import { onDestroy, onMount } from "svelte";
@@ -126,6 +162,8 @@
     rightHeaderActions: RightHeaderActions;
     leftHeaderActions: LeftHeaderActions;
     prefixHeaderActions: PrefixHeaderActions;
+    tabGroupChip: TabGroupChip;
+    groupDragGhost: GroupDragGhost;
   };
 
   type Props = RecursivePartial<DockSpecific> &
@@ -143,6 +181,8 @@
     rightHeaderActions,
     leftHeaderActions,
     prefixHeaderActions,
+    tabGroupChip,
+    groupDragGhost,
     onReady,
     onDidDrop,
     onWillDrop,
@@ -234,6 +274,14 @@
       ...extractCoreOptions(props, forwardedOptionKeys),
       ...frameworkOptions,
       defaultTabComponent: defaultTab ? defaultTabName : undefined,
+      createTabGroupChipComponent: createTabGroupChip(
+        index,
+        tabGroupChip as TabGroupChip
+      ),
+      createGroupDragGhostComponent: createGroupDragGhost(
+        index,
+        groupDragGhost as GroupDragGhost
+      ),
       theme,
     });
 

@@ -22,6 +22,8 @@ import type {
   IDockviewPanelHeaderProps,
   IWatermarkPanelProps,
   IDockviewHeaderActionsProps,
+  ITabGroupChipRenderer,
+  IGroupDragGhostRenderer,
   Orientation,
 } from "dockview";
 import { type Component, type Snippet } from "svelte";
@@ -135,8 +137,18 @@ type SnippetOrComponentTuple<TProps extends Record<string, any>> =
   | { component: CustomComponentConstraint<TProps>[string] }
   | { snippet: CustomSnippetsConstraint<TProps>[string] };
 
+/** What a tab group chip is rendered with, straight off the renderer contract. */
+export type ITabGroupChipProps = Parameters<ITabGroupChipRenderer["init"]>[0];
+
+/** What the ghost following the cursor during a group drag is rendered with. */
+export type IGroupDragGhostProps = Parameters<
+  IGroupDragGhostRenderer["init"]
+>[0];
+
 export type DockviewSpecificComponentConstraint = {
   watermark: SnippetOrComponentTuple<IWatermarkPanelProps>;
+  tabGroupChip: SnippetOrComponentTuple<ITabGroupChipProps>;
+  groupDragGhost: SnippetOrComponentTuple<IGroupDragGhostProps>;
   defaultTab: SnippetOrComponentTuple<IDockviewPanelHeaderProps>;
   rightHeaderActions: SnippetOrComponentTuple<IDockviewHeaderActionsProps>;
   leftHeaderActions: SnippetOrComponentTuple<IDockviewHeaderActionsProps>;
@@ -328,6 +340,21 @@ type CustomizedViewProps<
   : {}) &
   (ViewType extends "dock" ? { theme: ThemeSetting } : {});
 
+/**
+ * The dockview options `DockView.svelte` maps itself rather than forwards:
+ * `theme` arrives as a theme *name*, and the two renderer factories arrive as
+ * a component or a snippet. Forwarding any of them would push our own value
+ * through as if it were the one dockview documents.
+ */
+export const mappedDockviewOptionKeys = [
+  "theme",
+  "createTabGroupChipComponent",
+  "createGroupDragGhostComponent",
+] as const satisfies readonly (keyof DockviewOptions)[];
+
+export type MappedDockviewOptionKey =
+  (typeof mappedDockviewOptionKeys)[number];
+
 export type ModifiedProps<
   ViewType extends ViewKey,
   Components extends ComponentsConstraint<ViewType>,
@@ -336,6 +363,7 @@ export type ModifiedProps<
 > = Omit<
   RawViewProps<ViewType>,
   | keyof CustomizedViewProps<ViewType, Components, Snippets, Additional>
+  | (ViewType extends "dock" ? MappedDockviewOptionKey : never)
   | ("orientation" extends keyof RawViewProps<ViewType> ? "orientation" : never)
 > &
   CustomizedViewProps<ViewType, Components, Snippets, Additional> &

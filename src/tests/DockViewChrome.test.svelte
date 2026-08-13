@@ -2,6 +2,7 @@
   import type {
     IDockviewHeaderActionsProps,
     IDockviewPanelHeaderProps,
+    IDockviewPanel,
     IWatermarkPanelProps,
   } from "dockview";
   import { Sweater } from "../../sweater-vest-suede";
@@ -10,6 +11,7 @@
     DockView,
     themes,
     type DockviewTheme,
+    type ITabGroupChipProps,
     type Theme,
     type ViewAPI,
   } from "../../release";
@@ -33,6 +35,13 @@
     ...themes.dark,
     tabAnimation: "smooth",
   } satisfies DockviewTheme;
+
+  /** A tab group is named by the panel group it lives in, then filled. */
+  const intoTabGroup = (api: Api, panel: IDockviewPanel, label: string) => {
+    const groupId = panel.api.group.id;
+    const { id: tabGroupId } = api.createTabGroup({ groupId, label });
+    api.addPanelToTabGroup({ groupId, tabGroupId, panelId: panel.id });
+  };
 
   const withTab = (name: string, id: string) =>
     panel("dock").id(id).tabComponent(name)();
@@ -287,6 +296,38 @@
     </div>
   {/snippet}
 </Sweater>
+
+<Sweater
+  name="a tab group chip renders for the group it labels"
+  body={async (harness) => {
+    harness.set(new ViewPocket<Api>());
+    const { api } = await harness.definition("api");
+
+    const { panel } = await api.addComponentPanel("Label", { text: "first" });
+    intoTabGroup(api, panel, "work");
+    await harness.delay({ frames: 2 });
+
+    harness.capture("png");
+    harness.expect(rendered.texts(harness.container, "chip")).toEqual([
+      "chip for work",
+    ]);
+  }}
+>
+  {#snippet vest(pocket: Pocket)}
+    <div style:width="100%" style:height="100%">
+      <DockView
+        theme="dark"
+        components={{ Label: DockLabel }}
+        tabGroupChip={{ snippet: chip }}
+        onReady={pocket.ready}
+      />
+    </div>
+  {/snippet}
+</Sweater>
+
+{#snippet chip({ tabGroup }: ITabGroupChipProps)}
+  <span data-testid="chip">chip for {tabGroup.label}</span>
+{/snippet}
 
 {#snippet tab({ params }: IDockviewPanelHeaderProps<Params>)}
   <span data-testid="tab">snippet tab for {params.text}</span>
