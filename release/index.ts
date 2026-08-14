@@ -33,13 +33,14 @@ import {
   createLayoutHistory,
   type LayoutHistory,
   type LayoutHistoryOptions,
-} from "./history.js";
+} from "./history.svelte.js";
 import themes, {
   type Theme,
   type ThemeSetting,
   themeOptions,
 } from "./utils/themes.js";
 import { Orientation } from "dockview";
+import type { Expand } from "./utils/types.js";
 
 export {
   DockView,
@@ -135,9 +136,9 @@ export type ViewAPI<
 export type ViewHelper<
   Type extends ViewKey,
   Views extends Renderables<Type>
-> = {
+> = Expand<{
   api: ViewAPI<Type, Views>;
-} & WithViewOnReady<Type, Views>;
+} & WithViewOnReady<Type, Views>>;
 
 export type ViewsHelper<
   T extends Record<string, { type: ViewKey } | Renderables<ViewKey>>

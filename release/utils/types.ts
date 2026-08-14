@@ -12,7 +12,7 @@ type OptionalKeys<T> = {
 
 type OptionalProperties<T> = Pick<T, OptionalKeys<T>>;
 
-type Expand<T> = T extends infer O ? { [K in keyof O]: O[K] } : never;
+export type Expand<T> = T extends infer O ? { [K in keyof O]: O[K] } : never;
 
 export type ExpandRecursively<T> = T extends object
   ? T extends infer O

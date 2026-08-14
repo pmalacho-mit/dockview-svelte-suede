@@ -36,6 +36,7 @@ import type {
   ConstrainedComponent,
   OmitNever,
   AsNonReadonly,
+  Expand,
 } from "./types.js";
 import PanelRendererBase from "./PanelRendererBase.js";
 import ReactivePanelUpdater from "./reactivity.svelte.js";
@@ -347,7 +348,7 @@ type CustomizedViewProps<
   snippets?: Snippets;
   onReady?: (
     event: Parameters<OnReady<ViewType>>[0] & {
-      api: ExtendedGridAPI<ViewType, Components, Snippets, Additional>;
+      api: Expand<ExtendedGridAPI<ViewType, Components, Snippets, Additional>>;
     }
   ) => ReturnType<OnReady<ViewType>>;
 } & ("orientation" extends keyof RawViewProps<ViewType>

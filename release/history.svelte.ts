@@ -20,8 +20,11 @@ export type LayoutHistory = {
   undo(): Promise<void>;
   /** Re-apply the entry that `undo` stepped back over. */
   redo(): Promise<void>;
+  /** Reactive, so a button can bind its `disabled` straight to it. */
   readonly canUndo: boolean;
   readonly canRedo: boolean;
+  readonly undoCount: number;
+  readonly redoCount: number;
   /** Drop both stacks, e.g. on a document switch. */
   clear(): void;
   dispose(): void;
@@ -67,8 +70,8 @@ export const createLayoutHistory = (
 ): LayoutHistory => {
   const { origins, resizeSettleMs, limit } = { ...defaults, ...options };
 
-  const done: Entry[] = [];
-  const undone: Entry[] = [];
+  const done = $state<Entry[]>([]);
+  const undone = $state<Entry[]>([]);
 
   /** While an entry is being applied, the mutations it causes are not history. */
   let applying = false;
@@ -153,6 +156,12 @@ export const createLayoutHistory = (
     },
     get canRedo() {
       return undone.length > 0;
+    },
+    get undoCount() {
+      return done.length;
+    },
+    get redoCount() {
+      return undone.length;
     },
     clear() {
       done.length = 0;
