@@ -23,6 +23,15 @@ export class PropsUpdater<T extends Record<string, any>>
   }
 
   /**
+   * Write several values into one of the props, running the post-processor
+   * once rather than once per value.
+   */
+  updateMany<K extends keyof T>(key: K, values: Partial<T[K]>): void {
+    Object.assign(this.props[key] as Record<string, any>, values);
+    this.postProcessor?.(this.props);
+  }
+
+  /**
    * Example usage:
    *   updateSingle("topKey", "nestedKey", newValue)
    *   updateSingle("deep", "nested", "property", newValue)

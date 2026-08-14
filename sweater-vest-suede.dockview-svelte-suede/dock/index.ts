@@ -129,7 +129,6 @@ export class SvelteWatermarkRenderer<Props extends IWatermarkPanelProps>
   ) {
     super({
       ...config,
-      propsHasParams: false,
       panelTarget: "dockwatermark",
       initOptionsToProps: ({ group, containerApi }) =>
         ({ group, containerApi } as Props),
@@ -144,7 +143,6 @@ export class SvelteTabGroupChipRenderer<Props extends ITabGroupChipProps>
   constructor(config: ConstructorConfigWithout<Props, ITabGroupChipProps>) {
     super({
       ...config,
-      propsHasParams: false,
       panelTarget: "docktabgroupchip",
       initOptionsToProps: ({ tabGroup, api }) => ({ tabGroup, api } as Props),
     });
@@ -167,7 +165,6 @@ export class SvelteGroupDragGhostRenderer<Props extends IGroupDragGhostProps>
   constructor(config: ConstructorConfigWithout<Props, IGroupDragGhostProps>) {
     super({
       ...config,
-      propsHasParams: false,
       panelTarget: "dockdragghost",
       initOptionsToProps: ({ group, api }) => ({ group, api } as Props),
     });
@@ -200,7 +197,6 @@ export class SvelteDockActionsHeaderRenderer<
   ) {
     super({
       ...config,
-      propsHasParams: false,
       panelTarget: "dockactions",
       initOptionsToProps: ({ api, containerApi }) =>
         ({

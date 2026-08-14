@@ -39,7 +39,9 @@ import type {
   Expand,
 } from "./types.js";
 import PanelRendererBase from "./PanelRendererBase.js";
-import ReactivePanelUpdater from "./reactivity.svelte.js";
+import ReactivePanelUpdater, {
+  claimReactives,
+} from "./reactivity.svelte.js";
 import type { ThemeSetting } from "./themes";
 
 /** The listener a view api event is subscribed with. */
@@ -457,17 +459,7 @@ export const createExtendedAPI = <
       panelTarget: type,
     });
 
-    let reactives: [ReactivePanelUpdater<any>, string[]][] | undefined =
-      undefined;
-
-    for (const key in params) {
-      // Todo: this should be recursive
-      const value = (params as Record<string, any>)[key];
-      if (!(value instanceof ReactivePanelUpdater)) continue;
-      reactives ??= [];
-      reactives.push([value, ["params", key]]);
-      (params as Record<string, any>)[key] = value.value;
-    }
+    const reactives = claimReactives(params as RecordLike);
 
     const panel = api.addPanel({
       ...(config ?? {}),
@@ -477,8 +469,7 @@ export const createExtendedAPI = <
       params,
     }) as AddedPanelByView<ViewType>;
 
-    if (reactives)
-      for (const [reactive, path] of reactives) reactive.attach(panel, path);
+    for (const { reactive, slot } of reactives) reactive.attach(panel, slot);
 
     return [promise, panel, id] as const;
   };

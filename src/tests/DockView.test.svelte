@@ -7,6 +7,7 @@
   import { type Params } from "./fixtures/Label.svelte";
   import DockLabel from "./fixtures/DockLabel.svelte";
   import DockCounter from "./fixtures/DockCounter.svelte";
+  import DockNested from "./fixtures/DockNested.svelte";
   import { labels, rendered, ViewPocket } from "./support.svelte";
 
   type Api = ViewAPI<
@@ -14,6 +15,7 @@
     {
       Label: typeof DockLabel;
       Counter: typeof DockCounter;
+      Nested: typeof DockNested;
       label: Snippet<[PanelProps<"dock", Params>]>;
     }
   >;
@@ -217,6 +219,98 @@
 </Sweater>
 
 <Sweater
+  name="a reactive param nested inside another param keeps its panel in sync"
+  body={async (harness) => {
+    const pocket = harness.set(new Renamed());
+    const { api } = await harness.definition("api");
+
+    await api.addComponentPanel("Nested", {
+      label: { text: api.reactive(() => pocket.text) },
+      rows: ["a", "b"],
+    });
+    harness.expect(labels(harness.container)).toEqual(["before"]);
+
+    pocket.text = "after";
+    await harness.delay({ frames: 2 });
+
+    harness.note("dockview merges params one level deep, so the whole `label` is re-sent");
+    harness.expect(labels(harness.container)).toEqual(["after"]);
+  }}
+>
+  {#snippet vest(pocket: Renamed)}
+    {@render dock(pocket.ready)}
+  {/snippet}
+</Sweater>
+
+<Sweater
+  name="a param that did not change is not written again"
+  body={async (harness) => {
+    const pocket = harness.set(new Renamed());
+    const { api } = await harness.definition("api");
+
+    const { exports } = await api.addComponentPanel("Nested", {
+      label: { text: api.reactive(() => pocket.text) },
+      rows: ["a", "b"],
+    });
+    harness.expect(exports.rowRenderCount()).toBe(1);
+
+    pocket.text = "after";
+    await harness.delay({ frames: 2 });
+    pocket.text = "later";
+    await harness.delay({ frames: 2 });
+
+    harness.note(
+      "`rows` is handed back unchanged on every update; rewriting it would re-proxy it and invalidate its readers"
+    );
+    harness.expect(labels(harness.container)).toEqual(["later"]);
+    harness.expect(exports.rowRenderCount()).toBe(1);
+  }}
+>
+  {#snippet vest(pocket: Renamed)}
+    {@render dock(pocket.ready)}
+  {/snippet}
+</Sweater>
+
+<Sweater
+  name="one reactive value keeps every panel holding it in sync"
+  body={async (harness) => {
+    const pocket = harness.set(new Renamed());
+    const { api } = await harness.definition("api");
+
+    const shared = api.reactive(() => pocket.text);
+    const first = await api.addComponentPanel("Label", { text: shared }, at("first"));
+    await api.addComponentPanel("Label", { text: shared }, rightOf(first, "second"));
+
+    pocket.text = "after";
+    await harness.delay({ frames: 2 });
+
+    harness.expect(labels(harness.container)).toEqual(["after", "after"]);
+  }}
+>
+  {#snippet vest(pocket: Renamed)}
+    {@render dock(pocket.ready)}
+  {/snippet}
+</Sweater>
+
+<Sweater
+  name="a reactive value cannot stand in for the whole params object"
+  body={async (harness) => {
+    const pocket = harness.set(new Renamed());
+    const { api } = await harness.definition("api");
+
+    const wrongly = api.reactive(() => ({ text: pocket.text })) as Params;
+
+    await harness
+      .expect(api.addComponentPanel("Label", wrongly))
+      .rejects.toThrow("wraps a single param value");
+  }}
+>
+  {#snippet vest(pocket: Renamed)}
+    {@render dock(pocket.ready)}
+  {/snippet}
+</Sweater>
+
+<Sweater
   name="the panel builder places a panel into an edge group"
   body={async (harness) => {
     harness.set(new ViewPocket<Api>());
@@ -258,7 +352,7 @@
   <div style:width="100%" style:height="100%">
     <DockView
       theme="dark"
-      components={{ Label: DockLabel, Counter: DockCounter }}
+      components={{ Label: DockLabel, Counter: DockCounter, Nested: DockNested }}
       snippets={{ label }}
       {onReady}
     />
