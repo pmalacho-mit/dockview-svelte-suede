@@ -1,4 +1,4 @@
-import type { IFrameworkPart } from "dockview-core";
+import type { IFrameworkPart } from "dockview";
 import type { ValueAtPath, Path } from "./types.js";
 
 export type PropsPostProcessor<T extends Record<string, any>> = (
@@ -19,6 +19,15 @@ export class PropsUpdater<T extends Record<string, any>>
 
   update(props: T) {
     this.props = props;
+    this.postProcessor?.(this.props);
+  }
+
+  /**
+   * Write several values into one of the props, running the post-processor
+   * once rather than once per value.
+   */
+  updateMany<K extends keyof T>(key: K, values: Partial<T[K]>): void {
+    Object.assign(this.props[key] as Record<string, any>, values);
     this.postProcessor?.(this.props);
   }
 

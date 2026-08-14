@@ -14,7 +14,9 @@ export type IdentifierRecipe = {
     | ""
     | "header"
     | "watermark"
-    | "actions"}`;
+    | "actions"
+    | "tabgroupchip"
+    | "dragghost"}`;
 
   /** The index of the specific view
    * (which the view components _should_ internally keep track of,

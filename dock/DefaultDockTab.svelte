@@ -5,12 +5,7 @@
     IDockviewPanelHeaderProps,
     DockviewIDisposable,
     DockviewPanelApi,
-  } from "dockview-core";
-  /**
-   * Unused but included to easily navigate to (since these are the appropriate Prop types for this component,
-   * but the type becomes `any`, likely because it relies on `React.DOMAttributes<...>`)
-   */
-  import type { IDockviewDefaultTabProps } from "dockview";
+  } from "dockview";
 
   class ReactiveTitle implements DockviewIDisposable {
     title = $state("");
@@ -27,7 +22,7 @@
     }
   }
 
-  /** Should be implemented the same as `IDockviewDefaultTabProps` */
+  /** The props dockview's own built-in tab takes, less its React specifics. */
   type DockviewDefaultTabProps = IDockviewPanelHeaderProps & {
     hideClose?: boolean;
     closeActionOverride?: () => void;
@@ -45,6 +40,7 @@
     api,
     containerApi: _containerApi,
     params,
+    tabLocation: _tabLocation,
     hideClose,
     closeActionOverride,
     children: _,

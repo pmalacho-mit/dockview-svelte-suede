@@ -6,17 +6,17 @@ import DefaultDockTab, {
   type Props as DefaultDockTabProps,
 } from "./dock/DefaultDockTab.svelte";
 import type {
+  DockviewTheme,
   IDockviewHeaderActionsProps,
   IDockviewPanelHeaderProps,
   IDockviewPanelProps,
   IWatermarkPanelProps,
-} from "dockview-core";
-import type {
-  IPaneviewPanelProps,
-  ISplitviewPanelProps,
-  IGridviewPanelProps,
 } from "dockview";
 import type {
+  ITabContextMenuProps,
+  ITabGroupChipProps,
+  IGroupDragGhostProps,
+  PanelComponentPropsByView,
   ViewKey,
   ComponentsConstraint,
   SnippetsConstraint,
@@ -29,8 +29,18 @@ import type {
   Renderables,
 } from "./utils/index.js";
 import { reactive } from "./utils/index.js";
-import themes, { type Theme, themeOptions } from "./utils/themes.js";
-import { Orientation } from "dockview-core";
+import {
+  createLayoutHistory,
+  type LayoutHistory,
+  type LayoutHistoryOptions,
+} from "./history.svelte.js";
+import themes, {
+  type Theme,
+  type ThemeSetting,
+  themeOptions,
+} from "./utils/themes.js";
+import { Orientation } from "dockview";
+import type { Expand } from "./utils/types.js";
 
 export {
   DockView,
@@ -42,12 +52,20 @@ export {
   themes,
   themeOptions,
   DefaultDockTab,
+  createLayoutHistory,
 };
 
 export type {
   AddedPanelByView,
   ViewKey,
   Theme,
+  ThemeSetting,
+  DockviewTheme,
+  ITabContextMenuProps,
+  ITabGroupChipProps,
+  IGroupDragGhostProps,
+  LayoutHistory,
+  LayoutHistoryOptions,
   DefaultDockTabProps,
   Renderables,
 };
@@ -55,17 +73,15 @@ export type {
 export type PanelProps<
   T extends ViewKey,
   Options extends Record<string, any>
-> = {
-  grid: IGridviewPanelProps<Options>;
-  dock: IDockviewPanelProps<Options>;
-  pane: IPaneviewPanelProps<Options>;
-  split: ISplitviewPanelProps<Options>;
-}[T];
+> = PanelComponentPropsByView<Options>[T];
 
 export type AuxiliaryDockPanelProps = {
   watermark: IWatermarkPanelProps;
   tab: IDockviewPanelHeaderProps;
   headerAction: IDockviewHeaderActionsProps;
+  tabGroupChip: ITabGroupChipProps;
+  groupDragGhost: IGroupDragGhostProps;
+  tabContextMenu: ITabContextMenuProps;
 };
 
 export type ViewProps<
@@ -120,9 +136,9 @@ export type ViewAPI<
 export type ViewHelper<
   Type extends ViewKey,
   Views extends Renderables<Type>
-> = {
+> = Expand<{
   api: ViewAPI<Type, Views>;
-} & WithViewOnReady<Type, Views>;
+} & WithViewOnReady<Type, Views>>;
 
 export type ViewsHelper<
   T extends Record<string, { type: ViewKey } | Renderables<ViewKey>>

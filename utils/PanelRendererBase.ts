@@ -1,4 +1,4 @@
-import type { PanelUpdateEvent } from "dockview-core";
+import type { PanelUpdateEvent, Parameters } from "dockview";
 import { type Component, mount, unmount } from "svelte";
 import {
   PropsUpdater,
@@ -29,14 +29,6 @@ export type PanelRendererBaseConfig<
    * @param props
    */
   propsPostProcessor?: PropsPostProcessor<Props>;
-  /**
-   * Whether the props have a `params` property.
-   * TODO: investigate if this is necessary.
-   *
-   * @default true
-   */
-  propsHasParams?: boolean;
-
   element?: HTMLElement;
 } & IdentifierRecipe;
 
@@ -53,7 +45,9 @@ export default class PanelRendererBase<
   protected instance?: Mounted<Props>;
   protected readonly initOptionsToProps: (options: InitOptions) => Props;
   protected readonly propsPostProcessor?: PropsPostProcessor<Props>;
-  protected readonly propsHasParams: boolean;
+
+  /** The params as last written, to compare the next update against. */
+  private readonly written: Parameters = {};
 
   propsUpdater?: PropsUpdater<Props>;
 
@@ -66,7 +60,6 @@ export default class PanelRendererBase<
     this.svelteComponent = config.svelteComponent;
     this.initOptionsToProps = config.initOptionsToProps;
     this.propsPostProcessor = config.propsPostProcessor;
-    this.propsHasParams = config.propsHasParams ?? true;
     this._element = config.element ?? document.createElement("div");
     this._element.classList.add("dv-react-part");
     this._element.style.height = "100%";
@@ -79,10 +72,12 @@ export default class PanelRendererBase<
   }
 
   public init(options: InitOptions): void {
-    this.propsUpdater = new PropsUpdater(
-      this.initOptionsToProps(options),
-      this.propsPostProcessor
-    );
+    const props = this.initOptionsToProps(options);
+
+    /** Read before the props become reactive, so these are the raw values. */
+    Object.assign(this.written, props.params);
+
+    this.propsUpdater = new PropsUpdater(props, this.propsPostProcessor);
 
     this.instance = mount(this.svelteComponent, {
       target: this.element,
@@ -97,13 +92,29 @@ export default class PanelRendererBase<
   }
 
   update({ params }: PanelUpdateEvent): void {
-    // TODO: This is only efficient up to a depth of 1, can start recursing on params if `params[key]` is also an object?
-    for (const key in params)
-      this.propsUpdater?.updateSingle(
-        ...((this.propsHasParams
-          ? ["params", key, params[key]]
-          : [key, params[key]]) as any)
+    const changed = this.changed(params);
+    if (changed)
+      this.propsUpdater?.updateMany(
+        "params",
+        changed as Partial<Props["params"]>
       );
+  }
+
+  /**
+   * Dockview re-sends every param on every update, and writing one back is
+   * not free even when it has not changed: Svelte wraps an object value in a
+   * fresh proxy on assignment, which invalidates everything reading it.
+   */
+  private changed(params: Parameters): Parameters | undefined {
+    let changed: Parameters | undefined;
+
+    for (const key in params) {
+      if (this.written[key] === params[key]) continue;
+      this.written[key] = params[key];
+      (changed ??= {})[key] = params[key];
+    }
+
+    return changed;
   }
 
   private static ReadableIdentifier = ({
