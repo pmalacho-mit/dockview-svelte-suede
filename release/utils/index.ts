@@ -7,26 +7,27 @@ import type {
   ISplitviewPanel,
   SplitviewApi,
   PaneviewApi,
+  GridviewPanelApi,
+  PaneviewPanelApi,
+  SplitviewPanelApi,
+  GridviewOptions,
+  DockviewOptions,
+  SplitviewOptions,
+  PaneviewOptions,
   GridviewFrameworkOptions,
   DockviewFrameworkOptions,
   SplitviewFrameworkOptions,
   PaneviewFrameworkOptions,
+  IDockviewPanelProps,
   IDockviewPanelHeaderProps,
   IWatermarkPanelProps,
   IDockviewHeaderActionsProps,
+  ITabGroupChipRenderer,
+  IGroupDragGhostRenderer,
+  DockviewGroupPanel,
   Orientation,
-} from "dockview-core";
-import { type Component, type Snippet } from "svelte";
-import type {
-  IPaneviewReactProps,
-  IDockviewReactProps,
-  IGridviewReactProps,
-  ISplitviewReactProps,
-  IGridviewPanelProps,
-  IDockviewPanelProps,
-  IPaneviewPanelProps,
-  ISplitviewPanelProps,
 } from "dockview";
+import { type Component, type Snippet } from "svelte";
 import SnippetRender from "./SnippetRender.svelte";
 import type {
   RecordLike,
@@ -35,31 +36,63 @@ import type {
   ConstrainedComponent,
   OmitNever,
   AsNonReadonly,
+  Expand,
 } from "./types.js";
 import PanelRendererBase from "./PanelRendererBase.js";
-import ReactivePanelUpdater from "./reactivity.svelte.js";
-import type { Theme } from "./themes";
+import ReactivePanelUpdater, {
+  claimReactives,
+} from "./reactivity.svelte.js";
+import type { ThemeSetting } from "./themes";
+
+/** The listener a view api event is subscribed with. */
+type Listener<Event> = Event extends (listener: infer L) => any ? L : never;
 
 /**
- * The props for the React version of the different view components
+ * Drop callbacks are taken as props rather than left to the consumer to
+ * subscribe, and each is typed by the event it is subscribed to.
  */
-export type ReactViewPropsByView = {
-  grid: IGridviewReactProps;
-  dock: IDockviewReactProps;
-  pane: IPaneviewReactProps;
-  split: ISplitviewReactProps;
+type DropProps<Api, Keys extends keyof Api> = {
+  [K in Keys]?: Listener<Api[K]>;
+};
+
+/** Every view reports itself ready by handing back its api. */
+type ReadyProp<ViewType extends ViewKey> = {
+  onReady: (event: { api: RawViewAPIs[ViewType] }) => void;
+};
+
+/**
+ * The props each view component takes before this library customizes them:
+ * everything dockview's own options carry, plus what the view reports back.
+ */
+export type ViewPropsByView = {
+  grid: GridviewOptions & ReadyProp<"grid">;
+  dock: DockviewOptions &
+    ReadyProp<"dock"> &
+    DropProps<DockviewApi, "onDidDrop" | "onWillDrop">;
+  pane: PaneviewOptions & ReadyProp<"pane"> & DropProps<PaneviewApi, "onDidDrop">;
+  split: SplitviewOptions & ReadyProp<"split">;
 };
 
 /** The keys of the different view types */
-export type ViewKey = keyof ReactViewPropsByView;
+export type ViewKey = keyof ViewPropsByView;
+
+/** What a panel component is handed: its params, its own api, and its view's. */
+type PanelProps<Api, ContainerApi, T extends RecordLike> = {
+  params: T;
+  api: Api;
+  containerApi: ContainerApi;
+};
 
 /** The props of the components underlying the added panels within the different views */
-export type PanelComponentProps<T extends ViewKey = ViewKey> = {
-  grid: IGridviewPanelProps;
-  dock: IDockviewPanelProps;
-  pane: IPaneviewPanelProps;
-  split: ISplitviewPanelProps;
-}[T];
+export type PanelComponentPropsByView<T extends RecordLike = any> = {
+  grid: PanelProps<GridviewPanelApi, GridviewApi, T>;
+  dock: IDockviewPanelProps<T>;
+  pane: PanelProps<PaneviewPanelApi, PaneviewApi, T> & { title: string };
+  split: PanelProps<SplitviewPanelApi, SplitviewApi, T>;
+};
+
+export type PanelComponentProps<T extends ViewKey = ViewKey> =
+  PanelComponentPropsByView[T];
 
 export type OriginalPanelPropKeys<T extends ViewKey = ViewKey> =
   keyof PanelComponentProps<T>;
@@ -108,8 +141,32 @@ type SnippetOrComponentTuple<TProps extends Record<string, any>> =
   | { component: CustomComponentConstraint<TProps>[string] }
   | { snippet: CustomSnippetsConstraint<TProps>[string] };
 
+/**
+ * What a tab context menu is rendered with. Deliberately the argument shape
+ * upstream's `IContextMenuItemComponentProps` carries, so a later licence
+ * purchase is a swap rather than a rewrite.
+ */
+export type ITabContextMenuProps = {
+  panel: IDockviewPanel;
+  group: DockviewGroupPanel;
+  api: DockviewApi;
+  /** Call to close the context menu */
+  close: () => void;
+};
+
+/** What a tab group chip is rendered with, straight off the renderer contract. */
+export type ITabGroupChipProps = Parameters<ITabGroupChipRenderer["init"]>[0];
+
+/** What the ghost following the cursor during a group drag is rendered with. */
+export type IGroupDragGhostProps = Parameters<
+  IGroupDragGhostRenderer["init"]
+>[0];
+
 export type DockviewSpecificComponentConstraint = {
   watermark: SnippetOrComponentTuple<IWatermarkPanelProps>;
+  tabGroupChip: SnippetOrComponentTuple<ITabGroupChipProps>;
+  groupDragGhost: SnippetOrComponentTuple<IGroupDragGhostProps>;
+  tabContextMenu: SnippetOrComponentTuple<ITabContextMenuProps>;
   defaultTab: SnippetOrComponentTuple<IDockviewPanelHeaderProps>;
   rightHeaderActions: SnippetOrComponentTuple<IDockviewHeaderActionsProps>;
   leftHeaderActions: SnippetOrComponentTuple<IDockviewHeaderActionsProps>;
@@ -124,10 +181,10 @@ export type SelectivelyRequiredPanelComponentPropsByView<
   T extends RecordLike = RecordLike,
   Required extends OriginalPanelPropKeys = "params"
 > = {
-  grid: RequiredAndPartial<IGridviewPanelProps<T>, Required>;
-  dock: RequiredAndPartial<IDockviewPanelProps<T>, Required>;
-  pane: RequiredAndPartial<IPaneviewPanelProps<T>, Required>;
-  split: RequiredAndPartial<ISplitviewPanelProps<T>, Required>;
+  [ViewType in ViewKey]: RequiredAndPartial<
+    PanelComponentPropsByView<T>[ViewType],
+    Required
+  >;
 };
 
 export type FrameworkOptions<ViewType extends ViewKey> = {
@@ -137,9 +194,9 @@ export type FrameworkOptions<ViewType extends ViewKey> = {
   split: SplitviewFrameworkOptions;
 }[ViewType];
 
-/**  */
+/** The options `api.addPanel` takes for a given view, before customization. */
 type RawAddPanelOptions<T extends ViewKey> = Parameters<
-  Parameters<ReactViewPropsByView[T]["onReady"]>[0]["api"]["addPanel"]
+  RawViewAPIs[T]["addPanel"]
 >[0];
 
 export type AdditionalAddPanelOptions<ViewType extends ViewKey> =
@@ -267,7 +324,7 @@ export type ViewAPI<
 > = RawViewAPIs[ViewType] &
   ExtendedGridAPI<ViewType, Components, Snippets, Additional>;
 
-type RawViewProps<ViewType extends ViewKey> = ReactViewPropsByView[ViewType];
+type RawViewProps<ViewType extends ViewKey> = ViewPropsByView[ViewType];
 type OnReady<ViewType extends ViewKey> = RawViewProps<ViewType>["onReady"];
 
 type CustomizedViewProps<
@@ -293,21 +350,28 @@ type CustomizedViewProps<
   snippets?: Snippets;
   onReady?: (
     event: Parameters<OnReady<ViewType>>[0] & {
-      api: ExtendedGridAPI<ViewType, Components, Snippets, Additional>;
+      api: Expand<ExtendedGridAPI<ViewType, Components, Snippets, Additional>>;
     }
   ) => ReturnType<OnReady<ViewType>>;
 } & ("orientation" extends keyof RawViewProps<ViewType>
   ? { orientation: Orientation | "HORIZONTAL" | "VERTICAL" }
   : {}) &
-  (ViewType extends "dock" ? { theme: Theme } : {});
+  (ViewType extends "dock" ? { theme: ThemeSetting } : {});
 
-type OverridenDockviewReactPropNames =
-  | "tabComponents"
-  | "watermarkComponent"
-  | "defaultTabComponent"
-  | "rightHeaderActionsComponent"
-  | "leftHeaderActionsComponent"
-  | "prefixHeaderActionsComponent";
+/**
+ * The dockview options `DockView.svelte` maps itself rather than forwards:
+ * `theme` arrives as a theme *name*, and the two renderer factories arrive as
+ * a component or a snippet. Forwarding any of them would push our own value
+ * through as if it were the one dockview documents.
+ */
+export const mappedDockviewOptionKeys = [
+  "theme",
+  "createTabGroupChipComponent",
+  "createGroupDragGhostComponent",
+] as const satisfies readonly (keyof DockviewOptions)[];
+
+export type MappedDockviewOptionKey =
+  (typeof mappedDockviewOptionKeys)[number];
 
 export type ModifiedProps<
   ViewType extends ViewKey,
@@ -317,8 +381,7 @@ export type ModifiedProps<
 > = Omit<
   RawViewProps<ViewType>,
   | keyof CustomizedViewProps<ViewType, Components, Snippets, Additional>
-  | (ViewType extends "pane" ? "headerComponents" : never)
-  | (ViewType extends "dock" ? OverridenDockviewReactPropNames : never)
+  | (ViewType extends "dock" ? MappedDockviewOptionKey : never)
   | ("orientation" extends keyof RawViewProps<ViewType> ? "orientation" : never)
 > &
   CustomizedViewProps<ViewType, Components, Snippets, Additional> &
@@ -396,17 +459,7 @@ export const createExtendedAPI = <
       panelTarget: type,
     });
 
-    let reactives: [ReactivePanelUpdater<any>, string[]][] | undefined =
-      undefined;
-
-    for (const key in params) {
-      // Todo: this should be recursive
-      const value = (params as Record<string, any>)[key];
-      if (!(value instanceof ReactivePanelUpdater)) continue;
-      reactives ??= [];
-      reactives.push([value, ["params", key]]);
-      (params as Record<string, any>)[key] = value.value;
-    }
+    const reactives = claimReactives(params as RecordLike);
 
     const panel = api.addPanel({
       ...(config ?? {}),
@@ -416,8 +469,7 @@ export const createExtendedAPI = <
       params,
     }) as AddedPanelByView<ViewType>;
 
-    if (reactives)
-      for (const [reactive, path] of reactives) reactive.attach(panel, path);
+    for (const { reactive, slot } of reactives) reactive.attach(panel, slot);
 
     return [promise, panel, id] as const;
   };

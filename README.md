@@ -35,4 +35,5 @@ npm run report   # drives every test file through a containerized browser
 npm run check    # svelte-check, including the type assertions in src/tests/typing.check.ts
 ```
 
-[UPGRADE.md](./UPGRADE.md) covers what moving from `dockview@4.11` to `8.x` involves.
+[UPGRADE.md](./UPGRADE.md) is the plan that moved this library from `dockview@4.11` to
+`8.x`; [release/CHANGELOG.md](./release/CHANGELOG.md) is what that changed for consumers.

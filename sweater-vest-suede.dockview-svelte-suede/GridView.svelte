@@ -8,7 +8,7 @@
     type IFrameworkPart,
     type GridviewComponent,
     type GridviewFrameworkOptions,
-  } from "dockview-core";
+  } from "dockview";
   import {
     extractCoreOptions,
     type ComponentsConstraint,

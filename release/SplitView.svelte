@@ -7,7 +7,7 @@
     PROPERTY_KEYS_SPLITVIEW,
     type SplitviewFrameworkOptions,
     createSplitview,
-  } from "dockview-core";
+  } from "dockview";
   import {
     type ComponentsConstraint,
     type SnippetsConstraint,

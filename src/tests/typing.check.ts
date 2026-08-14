@@ -1,5 +1,6 @@
 import type { Snippet } from "svelte";
 import type { PanelProps, ViewAPI } from "../../release";
+import { panel } from "../../release/config";
 import type { Params } from "./fixtures/Label.svelte";
 import type DockLabel from "./fixtures/DockLabel.svelte";
 import type DockCounter from "./fixtures/DockCounter.svelte";
@@ -65,6 +66,12 @@ const viewSpecificOptionsStayOnTheirView = () => {
   grid.addComponentPanel("Label", { text: "hello" }, { title: "A section" });
 };
 
+const groupPlacementIsDockOnly = () => {
+  panel("dock").group({ id: "activity-bar" }).id("explorer")();
+  // @ts-expect-error only dock panels are placed relative to a group
+  panel("grid").group({ id: "activity-bar" });
+};
+
 const reactiveParamsKeepTheirType = () => {
   dock.addComponentPanel("Label", { text: dock.reactive(() => "hello") });
   // @ts-expect-error a reactive number is still not a string
@@ -77,6 +84,7 @@ export const typingChecks = {
   componentsAndSnippetsDoNotSwap,
   paramsFollowTheRenderable,
   placementIsCheckedAgainstTheView,
+  groupPlacementIsDockOnly,
   viewSpecificOptionsStayOnTheirView,
   reactiveParamsKeepTheirType,
 };
